@@ -18,9 +18,9 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace IngameScript8Refinery
+namespace SomeProg
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private List<IMyRefinery> refinery = new List<IMyRefinery>();
@@ -55,7 +55,7 @@ namespace IngameScript8Refinery
                     {
                         itemsToRefine.Add(key, 0);
                     }
-                    itemsToRefine[key] += ((double)inventoryItem[j].Amount);
+                    itemsToRefine[key] += (double)inventoryItem[j].Amount;
                 }
 
                 IMyInventory outInvent = refinery[i].OutputInventory;
@@ -68,7 +68,7 @@ namespace IngameScript8Refinery
                     {
                         itemsRefined.Add(key, 0);
                     }
-                    itemsRefined[key] += ((double)inventoryItem[j].Amount);
+                    itemsRefined[key] += (double)inventoryItem[j].Amount;
                 }
 
             }
@@ -109,7 +109,7 @@ namespace IngameScript8Refinery
             screen.WriteText(sItemsToRefine + "\n\n" + sItemsRefined);
             screen2.WriteText(sRefineSpeed + "\n\n" + sIngotSpeed);
         }
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -134,7 +134,7 @@ namespace IngameScript8Refinery
 
 namespace IngameScript7GasGenerators
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         private IMyTextPanel screen;
         private List<IMyGasGenerator> containers = new List<IMyGasGenerator>();
@@ -168,7 +168,7 @@ namespace IngameScript7GasGenerators
 
 namespace IngameScript6Battery
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private IMyTextPanel screen;
@@ -183,6 +183,7 @@ namespace IngameScript6Battery
         {
             screen = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("stationMainDisp1");
             GridTerminalSystem.GetBlocksOfType<IMyBatteryBlock>(batteries);
+
             //batteries.RemoveAll(x => !x.CustomName.Contains("StationBattery"));
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
@@ -208,10 +209,10 @@ namespace IngameScript6Battery
             }
 
             string strVolume = "Energy : " + CountToString(Sum * 1000000) + "wh / " + CountToString(Max * 1000000) + "wh";
-            string strVolumePersent = "Energy percent : " + ((Sum / Max) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
             string InOut = "in : +" + CountToString(EnPlus * 1000000) + "wh" +
                            "\nout : -" + CountToString(EnMinus * 1000000) + "wh" +
-                           "\ntotal : " + CountToString(((EnPlus - EnMinus) * 1000000)) + "wh";
+                           "\ntotal : " + CountToString((EnPlus - EnMinus) * 1000000) + "wh";
             double time = (Max - Sum) / (EnPlus - EnMinus);
             long timeTicks = (long)(time * 3600 * 10000000);
             TimeSpan timeSpan = new TimeSpan(timeTicks);
@@ -228,7 +229,7 @@ namespace IngameScript6Battery
             screen.WriteText(strVolume + "\n" + strVolumePersent + "\n" + InOut);
         }
 
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -253,9 +254,9 @@ namespace IngameScript6Battery
 
 namespace IngameScript5Counter
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
@@ -297,14 +298,18 @@ namespace IngameScript5Counter
 
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
@@ -324,8 +329,8 @@ namespace IngameScript5Counter
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
 
                 List<MyInventoryItem> inventoryItem = new List<MyInventoryItem>();
                 invent.GetItems(inventoryItem);
@@ -338,7 +343,7 @@ namespace IngameScript5Counter
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)inventoryItem[j].Amount);
+                        components[key] += (double)inventoryItem[j].Amount;
                     }
                     else
                     {
@@ -349,14 +354,14 @@ namespace IngameScript5Counter
                             {
                                 others.Add(key, 0);
                             }
-                            others[key] += ((double)inventoryItem[j].Amount);
+                            others[key] += (double)inventoryItem[j].Amount;
                         }
                     }
                 }
             }
 
             string strVolume = "Volume absolute : " + ValueToString(volumeSum * 1000) + "l / " + ValueToString(volumeMax * 1000) + "l";
-            string strVolumePersent = "Volume percent : " + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Volume percent : " + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             string ComponentsString = "Components:\n";
             foreach (KeyValuePair<string, double> item in components)
@@ -382,7 +387,7 @@ namespace IngameScript5Counter
                 HydroSum += gasHydro[i].FilledRatio * gasHydro[i].Capacity;
             }
             string hydroState = "hydro : " + CountToString(HydroSum) + "/" + CountToString(HydroCapacity) +
-                "\nin tanks : " + ((HydroSum / HydroCapacity) * 100).ToString("0.00000") + "%";
+                                "\nin tanks : " + (HydroSum / HydroCapacity * 100).ToString("0.00000") + "%";
 
             screen2.WriteText(ComponentsString);
             screen3.WriteText(OtherString);
@@ -390,7 +395,7 @@ namespace IngameScript5Counter
             screen.WriteText(strVolume + "\n" + strVolumePersent + "\n\n" + hydroState);
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -410,7 +415,7 @@ namespace IngameScript5Counter
             return count.ToString("0.0");
         }
 
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -437,11 +442,12 @@ namespace IngameScript5Counter
 namespace IngameScriptLightAndrey
 {
 
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private IMyLightingBlock light1;
         private IMyLightingBlock light2;
+
         //private IMyTextPanel screen;
 
         private int Timer;
@@ -471,12 +477,13 @@ namespace IngameScriptLightAndrey
             {
                 light1.Enabled = true;
                 light2.Enabled = true;
-                float Intensity = (float)(Math.Sin(((Timer - TimeToBlink) / (float)TimeBlick) * Math.PI) * 10);
+                float Intensity = (float)(Math.Sin((Timer - TimeToBlink) / (float)TimeBlick * Math.PI) * 10);
+
                 //screen.WriteText(Intensity.ToString("0.000"));
                 light1.Intensity = Intensity;
                 light2.Intensity = Intensity;
             }
-            if (Timer >= (TimeToBlink + TimeBlick))
+            if (Timer >= TimeToBlink + TimeBlick)
             {
                 light1.Enabled = false;
                 light2.Enabled = false;
@@ -489,14 +496,15 @@ namespace IngameScriptLightAndrey
 
 namespace IngameScript3_1
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
             none
         }
+
         //private IMyTextPanel screen;
 
         public void Main(string argument, UpdateType updateSource)
@@ -505,6 +513,7 @@ namespace IngameScript3_1
             List<IMyGasTank> gasOxy = new List<IMyGasTank>();
             List<IMyGasTank> gasHydro = new List<IMyGasTank>();
             GridTerminalSystem.GetBlocksOfType<IMyGasTank>(gas);
+
             //gas.RemoveAll(x => !x.CustomName.Contains("Mining"));
             for (int i = 0; i < gas.Count; i++)
             {
@@ -517,6 +526,7 @@ namespace IngameScript3_1
                     gasHydro.Add(gas[i]);
                 }
             }
+
             //screen = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("MiningDisplayT");
             //string s = "";
 
@@ -534,14 +544,18 @@ namespace IngameScript3_1
 
             //screen.WriteText(s);
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
@@ -550,9 +564,9 @@ namespace IngameScript3_1
 
 namespace IngameScript4Ventilation
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
@@ -606,11 +620,11 @@ namespace IngameScript4Ventilation
                 sum += gas[i].FilledRatio * gas[i].Capacity;
             }
             string oxyState = "oxygen : " + CountToString(sum) + "/" + CountToString(capacity) +
-                "\nin tanks : " + ((sum / capacity) * 100).ToString("0.00") +
-                "%\nin room : " + (vent.GetOxygenLevel() * 100).ToString("0.0000") + "%";
+                              "\nin tanks : " + (sum / capacity * 100).ToString("0.00") +
+                              "%\nin room : " + (vent.GetOxygenLevel() * 100).ToString("0.0000") + "%";
 
             string doorState = "door1 : " + DoorOpenRatioToString(door1) +
-                "\ndoor2 : " + DoorOpenRatioToString(door2);
+                               "\ndoor2 : " + DoorOpenRatioToString(door2);
 
             double farmSum = 0;
             for (int i = 0; i < farms.Count; i++)
@@ -646,7 +660,7 @@ namespace IngameScript4Ventilation
             }
         }
 
-        bool IsOpenDoor(IMyDoor door)
+        private bool IsOpenDoor(IMyDoor door)
         {
             if (door.OpenRatio == 0)
             {
@@ -656,7 +670,7 @@ namespace IngameScript4Ventilation
 
         }
 
-        string DoorOpenRatioToString(IMyDoor door)
+        private string DoorOpenRatioToString(IMyDoor door)
         {
             if (door.OpenRatio == 1)
             {
@@ -669,19 +683,23 @@ namespace IngameScript4Ventilation
             return "opening.. " + ((int)(door.OpenRatio * 100)).ToString() + "%";
         }
 
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
 
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -706,7 +724,7 @@ namespace IngameScript4Ventilation
 
 namespace IngameScript3
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         private IMyTextPanel screen;
         private int iter = 0;
@@ -765,10 +783,10 @@ namespace IngameScript3
 
 namespace IngameScript2
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
-        class Act
+        private class Act
         {
             public Act nextAct;
             public double nextActTime;
@@ -809,16 +827,28 @@ namespace IngameScript2
                     Act act1 = new Act() //open
                     {
                         nextActTime = Now + 2,
-                        thisAction = () => { piston.Velocity = 2; screen.WriteText("open\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = 2;
+                            screen.WriteText("open\n" + Now);
+                        }
                     };
                     Act act2 = new Act() //wait
                     {
                         nextActTime = Now + 4,
-                        thisAction = () => { piston.Velocity = 0; screen.WriteText("wait\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = 0;
+                            screen.WriteText("wait\n" + Now);
+                        }
                     };
                     Act act3 = new Act() //close
                     {
-                        thisAction = () => { piston.Velocity = -2; screen.WriteText("close\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = -2;
+                            screen.WriteText("close\n" + Now);
+                        }
                     };
                     act1.nextAct = act2;
                     act2.nextAct = act3;
@@ -829,21 +859,37 @@ namespace IngameScript2
                     Act act0 = new Act() //wait
                     {
                         nextActTime = Now + 2,
-                        thisAction = () => { piston.Velocity = 0; screen.WriteText("wait\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = 0;
+                            screen.WriteText("wait\n" + Now);
+                        }
                     };
                     Act act1 = new Act() //open
                     {
                         nextActTime = Now + 4,
-                        thisAction = () => { piston.Velocity = 2; screen.WriteText("open\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = 2;
+                            screen.WriteText("open\n" + Now);
+                        }
                     };
                     Act act2 = new Act() //wait
                     {
                         nextActTime = Now + 6,
-                        thisAction = () => { piston.Velocity = 0; screen.WriteText("wait\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = 0;
+                            screen.WriteText("wait\n" + Now);
+                        }
                     };
                     Act act3 = new Act() //close
                     {
-                        thisAction = () => { piston.Velocity = -2; screen.WriteText("close\n" + Now); },
+                        thisAction = () =>
+                        {
+                            piston.Velocity = -2;
+                            screen.WriteText("close\n" + Now);
+                        }
                     };
                     act0.nextAct = act1;
                     act1.nextAct = act2;
@@ -868,7 +914,7 @@ namespace IngameScript2
 
 namespace IngameScript2.ServerScriptsMainShip
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         private class SCR
         {
@@ -915,19 +961,19 @@ namespace IngameScript2.ServerScriptsMainShip
 
         private Dictionary<string, int> componentsMinimum = new Dictionary<string, int>()
         {
-            { "SmallTube", 5000},
-            { "LargeTube", 5000},
-            { "MotorComponent", 3000},
-            { "RadioCommunicationComponent", 500},
-            { "Display", 200},
-            { "GirderComponent", 1000},
-            { "BulletproofGlass", 1000},
-            { "InteriorPlate", 20000},
-            { "ConstructionComponent", 20000},
-            { "MetalGrid", 5000},
-            { "ComputerComponent", 2000},
-            { "SteelPlate", 20000}
-            
+            { "SmallTube", 5000 },
+            { "LargeTube", 5000 },
+            { "MotorComponent", 3000 },
+            { "RadioCommunicationComponent", 500 },
+            { "Display", 200 },
+            { "GirderComponent", 1000 },
+            { "BulletproofGlass", 1000 },
+            { "InteriorPlate", 20000 },
+            { "ConstructionComponent", 20000 },
+            { "MetalGrid", 5000 },
+            { "ComputerComponent", 2000 },
+            { "SteelPlate", 20000 }
+
             //{ new MinLevel("Reactor", 1)}, // детали реактора
             //{ new MinLevel("Thrust", 1)}, // ионный ускоритель
         };
@@ -936,51 +982,52 @@ namespace IngameScript2.ServerScriptsMainShip
 
         private Dictionary<string, MyDefinitionId> blueprints = new Dictionary<string, MyDefinitionId>()
         {
-            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube")},
-            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube")},
-            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent")},
-            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent")},
-            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display")},
-            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent")},
-            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass")},
-            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate")},
-            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent")},
-            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid")},
-            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate")},
-            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent")},
+            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube") },
+            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube") },
+            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent") },
+            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent") },
+            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display") },
+            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent") },
+            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass") },
+            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate") },
+            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent") },
+            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid") },
+            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate") },
+            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent") }
+
             //{ "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube")},
         };
 
         private Dictionary<string, string> blueprintsToTypes = new Dictionary<string, string>()
         {
-            { "SmallTube", "SmallTube"},
-            { "LargeTube", "LargeTube"},
-            { "MotorComponent", "Motor"},
-            { "RadioCommunicationComponent", "RadioCommunication"},
-            { "Display", "Display"},
-            { "GirderComponent", "Girder"},
-            { "BulletproofGlass", "BulletproofGlass"},
-            { "InteriorPlate", "InteriorPlate"},
-            { "ConstructionComponent", "Construction"},
-            { "MetalGrid", "MetalGrid"},
-            { "ComputerComponent", "Computer"},
-            { "SteelPlate", "SteelPlate"}
+            { "SmallTube", "SmallTube" },
+            { "LargeTube", "LargeTube" },
+            { "MotorComponent", "Motor" },
+            { "RadioCommunicationComponent", "RadioCommunication" },
+            { "Display", "Display" },
+            { "GirderComponent", "Girder" },
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "ConstructionComponent", "Construction" },
+            { "MetalGrid", "MetalGrid" },
+            { "ComputerComponent", "Computer" },
+            { "SteelPlate", "SteelPlate" }
         };
 
         private Dictionary<string, string> typesToBlueprints = new Dictionary<string, string>()
         {
-            { "SmallTube", "SmallTube"},
-            { "LargeTube", "LargeTube"},
-            { "Motor", "MotorComponent"},
-            { "RadioCommunication", "RadioCommunicationComponent"},
-            { "Display", "Display"},
-            { "Girder", "GirderComponent"},
-            { "BulletproofGlass", "BulletproofGlass"},
-            { "InteriorPlate", "InteriorPlate"},
-            { "Construction", "ConstructionComponent"},
-            { "MetalGrid", "MetalGrid"},
-            { "Computer", "ComputerComponent"},
-            { "SteelPlate", "SteelPlate"}
+            { "SmallTube", "SmallTube" },
+            { "LargeTube", "LargeTube" },
+            { "Motor", "MotorComponent" },
+            { "RadioCommunication", "RadioCommunicationComponent" },
+            { "Display", "Display" },
+            { "Girder", "GirderComponent" },
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "Construction", "ConstructionComponent" },
+            { "MetalGrid", "MetalGrid" },
+            { "Computer", "ComputerComponent" },
+            { "SteelPlate", "SteelPlate" }
         };
 
         private List<IMyProductionBlock> assemblers = new List<IMyProductionBlock>();
@@ -994,7 +1041,7 @@ namespace IngameScript2.ServerScriptsMainShip
 
         private List<IMyRefinery> refineries = new List<IMyRefinery>();
         private Dictionary<string, AverageDouble> refinesTotal = new Dictionary<string, AverageDouble>();
-        Dictionary<string, double> prevRefine = new Dictionary<string, double>();
+        private Dictionary<string, double> prevRefine = new Dictionary<string, double>();
 
         #region Ice
 
@@ -1015,9 +1062,9 @@ namespace IngameScript2.ServerScriptsMainShip
         private void Debug()
         {
             string debug = "";
-            foreach (var asm in assemblers)
+            foreach (IMyProductionBlock asm in assemblers)
             {
-                var q = new List<MyProductionItem>();
+                List<MyProductionItem> q = new List<MyProductionItem>();
                 debug += asm.CustomName + "\n";
             }
 
@@ -1097,16 +1144,16 @@ namespace IngameScript2.ServerScriptsMainShip
             }
 
             string strVolume = "Energy : " + CountToString(Sum * 1000000) + "w / " + CountToString(Max * 1000000) + "w";
-            string strVolumePersent = "Energy percent : " + ((Sum / Max) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
             string InOut = "in : +" + CountToString(EnPlus * 1000000) + "wh" +
                            "\nout : -" + CountToString(EnMinus * 1000000) + "wh" +
-                           "\ntotal : " + CountToString(((EnPlus - EnMinus) * 1000000)) + "wh";
+                           "\ntotal : " + CountToString((EnPlus - EnMinus) * 1000000) + "wh";
             double time = (Max - Sum) / (EnPlus - EnMinus);
 
             long timeTicks = (long)(time * 3600 * 10000000);
             TimeSpan timeSpan = new TimeSpan(timeTicks);
 
-            if ((Sum / Max) * 100 < 99)
+            if (Sum / Max * 100 < 99)
             {
                 if (time > 0)
                 {
@@ -1114,7 +1161,7 @@ namespace IngameScript2.ServerScriptsMainShip
                 }
                 else
                 {
-                    double timeToDiscarge = (Sum) / (EnPlus - EnMinus);
+                    double timeToDiscarge = Sum / (EnPlus - EnMinus);
                     long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
                     TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicks);
                     InOut += "\ntime to discharge : " + timeSpanToDiscarge.ToString(@"dd\.hh\:mm\:ss");
@@ -1135,8 +1182,8 @@ namespace IngameScript2.ServerScriptsMainShip
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
 
             Dictionary<string, double> components = new Dictionary<string, double>();
@@ -1145,8 +1192,8 @@ namespace IngameScript2.ServerScriptsMainShip
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
 
                 List<MyInventoryItem> inventoryItem = new List<MyInventoryItem>();
                 invent.GetItems(inventoryItem);
@@ -1159,7 +1206,7 @@ namespace IngameScript2.ServerScriptsMainShip
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)inventoryItem[j].Amount);
+                        components[key] += (double)inventoryItem[j].Amount;
                     }
                     else
                     {
@@ -1170,7 +1217,7 @@ namespace IngameScript2.ServerScriptsMainShip
                             {
                                 others.Add(key, 0);
                             }
-                            others[key] += ((double)inventoryItem[j].Amount);
+                            others[key] += (double)inventoryItem[j].Amount;
                         }
                     }
                 }
@@ -1178,18 +1225,18 @@ namespace IngameScript2.ServerScriptsMainShip
             double AdditionalIce = 0;
             foreach (IMyGasGenerator henerator in H2Henerators)
             {
-                var invent = henerator.GetInventory();
+                IMyInventory invent = henerator.GetInventory();
                 List<MyInventoryItem> items = new List<MyInventoryItem>();
                 invent.GetItems(items);
-                foreach (var item in items)
+                foreach (MyInventoryItem item in items)
                 {
-                    if(item.Type.SubtypeId == "OreIce")
+                    if (item.Type.SubtypeId == "OreIce")
                     {
                         AdditionalIce += (double)item.Amount;
                     }
                 }
             }
-            if(AdditionalIce > 0)
+            if (AdditionalIce > 0)
             {
                 if (!others.ContainsKey("OreIce"))
                 {
@@ -1207,7 +1254,7 @@ namespace IngameScript2.ServerScriptsMainShip
                     IcePrevCount = currentIce;
 
                     iceUsing.AddNext(iceСonsumption);
-                    double iceSpeed = (iceUsing.Average / fixedDeltaIce.TotalSeconds);
+                    double iceSpeed = iceUsing.Average / fixedDeltaIce.TotalSeconds;
 
 
                     string IceUsingString = "Ice left:" + new TimeSpan(10000000 * (long)Math.Truncate(others["OreIce"] / iceSpeed)).ToString(@"dd\.hh\:mm\:ss") + "\n";
@@ -1224,6 +1271,7 @@ namespace IngameScript2.ServerScriptsMainShip
                         max = double.MinValue;
                     }
                     string spaceIce = "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
+
                     //IceUsingString += iceUsing.Counter.ToString() + finishIndex.ToString();
                     for (int i = iceUsing.Counter; i != finishIndex; i--)
                     {
@@ -1231,7 +1279,7 @@ namespace IngameScript2.ServerScriptsMainShip
                         {
                             i = iceUsing.Count - 1;
                         }
-                        int lenght = (int)Clamp((iceUsing[i] / max) * (spaceIce.Length - 1), 0, spaceIce.Length - 1);
+                        int lenght = (int)Clamp(iceUsing[i] / max * (spaceIce.Length - 1), 0, spaceIce.Length - 1);
                         IceUsingString += spaceIce.Substring(0, lenght) + "|\n";
                         if (i == finishIndex)
                         {
@@ -1256,14 +1304,14 @@ namespace IngameScript2.ServerScriptsMainShip
                     {
                         production.Add(key, 0);
                     }
-                    production[key] += ((int)item.Amount);
+                    production[key] += (int)item.Amount;
                 }
 
                 IMyInventory asmInvent = asm.OutputInventory;
                 List<MyInventoryItem> inventoryItems = new List<MyInventoryItem>();
                 asmInvent.GetItems(inventoryItems);
 
-                foreach (var item in inventoryItems)
+                foreach (MyInventoryItem item in inventoryItems)
                 {
                     if (item.Type.TypeId.Contains("Component"))
                     {
@@ -1272,11 +1320,11 @@ namespace IngameScript2.ServerScriptsMainShip
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)item.Amount);
+                        components[key] += (double)item.Amount;
 
                         IMyInventory inventTo = containersForCraft.FirstOrDefault(x =>
                         {
-                            return (x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume) > item.Amount;
+                            return x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume > item.Amount;
                         })?.GetInventory();
                         asmInvent.TransferItemTo(inventTo, item);
 
@@ -1312,7 +1360,7 @@ namespace IngameScript2.ServerScriptsMainShip
             }
 
             string strCargo = "Cargo absolute : " + ValueToString(volumeSum * 1000) + "l / " + ValueToString(volumeMax * 1000) + "l";
-            string strCargoPersent = "\nCargo percent : " + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strCargoPersent = "\nCargo percent : " + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             string ComponentsString = "Components:\n";
             List<KeyValuePair<string, double>> compList = components.OrderBy(x => x.Key).ToList();
@@ -1354,7 +1402,7 @@ namespace IngameScript2.ServerScriptsMainShip
             string percentJumpStr = "";
             foreach (IMyJumpDrive jd in jumpDrives)
             {
-                float percentJump = (jd.CurrentStoredPower / jd.MaxStoredPower) * 100;
+                float percentJump = jd.CurrentStoredPower / jd.MaxStoredPower * 100;
                 percentJumpStr += "\n" + jd.CustomName + " power : " + percentJump.ToString("0.0") + "%";
                 if (percentJump == 100f)
                 {
@@ -1386,11 +1434,11 @@ namespace IngameScript2.ServerScriptsMainShip
                 List<MyInventoryItem> inventoryItems = new List<MyInventoryItem>();
                 refOutInvent.GetItems(inventoryItems);
 
-                foreach (var item in inventoryItems)
+                foreach (MyInventoryItem item in inventoryItems)
                 {
                     IMyInventory inventTo = containersForCraft.FirstOrDefault(x =>
                     {
-                        return (x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume) > item.Amount;
+                        return x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume > item.Amount;
                     })?.GetInventory();
                     refOutInvent.TransferItemTo(inventTo, item);
                 }
@@ -1407,32 +1455,36 @@ namespace IngameScript2.ServerScriptsMainShip
                 {
                     refinesTotal[item.Key].AddNext((prevRefine[item.Key] - item.Value) / DeltaTime.TotalSeconds);
                 }
-                TimeSpan timeLeft = new TimeSpan((long)((item.Value / refinesTotal[item.Key].Average) * 10000000));
+                TimeSpan timeLeft = new TimeSpan((long)(item.Value / refinesTotal[item.Key].Average * 10000000));
                 onRefineInfo += item.Key + ":" + CountToString(item.Value, "0.000") + "    time:" + timeLeft.ToString(@"dd\.hh\:mm\:ss") + "\n";
             }
             prevRefine = refineItems;
             screens[2].Text = onRefineInfo;
         }
 
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
             none
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -1452,7 +1504,7 @@ namespace IngameScript2.ServerScriptsMainShip
             return count.ToString("0.0");
         }
 
-        string CountToString(double count, string roundto = "0.0")
+        private string CountToString(double count, string roundto = "0.0")
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -1479,7 +1531,7 @@ namespace IngameScript2.ServerScriptsMainShip
 
         private double Clamp(double x, double min, double max)
         {
-            return (x < min) ? min : ((x > max) ? max : x);
+            return x < min ? min : x > max ? max : x;
         }
 
         /// <summary>
@@ -1592,10 +1644,10 @@ namespace IngameScript
 {
 
 
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
@@ -1648,21 +1700,25 @@ namespace IngameScript
             timerBlock.ApplyAction("TriggerNow");
         }
 
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
 
     }
 
-    partial class Program2 : MyGridProgram
+    internal partial class Program2 : MyGridProgram
     {
         private List<IMyGasTank> gas;
         private IMyTextPanel screen;
@@ -1757,4 +1813,3 @@ namespace IngameScript
 
     }
 }
-

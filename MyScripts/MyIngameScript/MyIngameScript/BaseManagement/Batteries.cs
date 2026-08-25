@@ -1,0 +1,354 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using Sandbox.Game.EntityComponents;
+using Sandbox.ModAPI.Ingame;
+using Sandbox.ModAPI.Interfaces;
+using SpaceEngineers.Game.ModAPI.Ingame;
+using VRage;
+using VRage.Collections;
+using VRage.Game;
+using VRage.Game.Components;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ModAPI.Ingame.Utilities;
+using VRage.Game.ObjectBuilders.Definitions;
+using VRageMath;
+
+namespace Batteries
+{
+    internal partial class Program : MyGridProgram
+    {
+        #region ALL
+
+        #region basics
+
+        private DateTime TimeNow => DateTime.Now;
+        private DateTime PrevTime;
+        private TimeSpan DeltaTime => TimeNow - PrevTime;
+        private float PerSecond => (float)(1.0 / DeltaTime.TotalSeconds);
+
+        private DateTime lastRecompileTime = DateTime.Now;
+
+        private const int skipUpdateCount = 5;
+        private int updateCounter = 0;
+        private int UpdateCounter
+        {
+            get
+            {
+                return updateCounter;
+            }
+            set
+            {
+                updateCounter = value % skipUpdateCount;
+            }
+        }
+
+        private IMyCubeGrid grid;
+        private List<SCR> thisScreens;
+
+        public Program()
+        {
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            REinit();
+        }
+
+        private void REinit()
+        {
+            lastRecompileTime = TimeNow;
+            grid = Me.CubeGrid;
+            InitScreens();
+            AdditionInits();
+        }
+
+        private void InitScreens()
+        {
+            thisScreens = SCR.GetAll(Me, true, 1.6f);
+        }
+
+        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock
+        {
+            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.Name.Contains("scrIgnore"));
+        }
+
+        #endregion
+
+        private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
+
+        private const string SCREEN_BATTERIES = "batteriesSCR";
+        private SCR scr;
+
+        private const string SCREEN_BATTERIES_Q = "bquick";
+        private SCR scrq;
+
+        private void AdditionInits()
+        {
+//INIT HERE---------
+            scr = new SCR(GridTerminalSystem, SCREEN_BATTERIES, true, 0.7f);
+            scrq = new SCR(GridTerminalSystem, SCREEN_BATTERIES_Q, true, 4.2f);
+            InitBlocks(batteries);
+        }
+
+        public void Main(string argument, UpdateType updateSource)
+        {
+            #region basics
+
+            if (argument == "RE")
+            {
+                REinit();
+            }
+
+            DateTime t = TimeNow;
+            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n\n\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+
+            UpdateCounter++;
+            if (updateCounter != 0)
+            {
+                return;
+            }
+
+            #endregion
+
+//CODE HERE----------------
+            BatteriesInfo();
+
+//CODE END-----------------
+            PrevTime = TimeNow;
+        }
+
+        public void BatteriesInfo()
+        {
+            double Sum = 0;
+            double Max = 0;
+            double EnPlus = 0;
+            double EnMinus = 0;
+
+            for (int i = 0; i < batteries.Count; i++)
+            {
+                if (batteries[i] != null)
+                {
+                    Max += batteries[i].MaxStoredPower;
+                    Sum += batteries[i].CurrentStoredPower;
+                    EnPlus += batteries[i].CurrentInput;
+                    EnMinus += batteries[i].CurrentOutput;
+                }
+            }
+
+            string strVolume = "Energy : " + ValueToString(Sum * 1000000) + "wh / " + ValueToString(Max * 1000000) + "wh";
+            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
+            string InOut = "in : +" + ValueToString(EnPlus * 1000000) + "w" +
+                           "\nout : -" + ValueToString(EnMinus * 1000000) + "w" +
+                           "\ntotal : " + ValueToString((EnPlus - EnMinus) * 1000000) + "w";
+            double time = (Max - Sum) / (EnPlus - EnMinus);
+
+            long timeTicks = (long)(time * 3600 * 10000000);
+            TimeSpan timeSpan = new TimeSpan(timeTicks);
+
+            if (Sum / Max * 100 < 99)
+            {
+                if (time > 0)
+                {
+                    InOut += $"\ntime to charge : {timeSpan:dd\\.hh\\:mm\\:ss}";
+                }
+                else
+                {
+                    double timeToDiscarge = Sum / (EnPlus - EnMinus);
+                    long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
+                    TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicksToDiscarge);
+                    InOut += $"\ntime to discharge : {timeSpanToDiscarge:dd\\.hh\\:mm\\:ss}";
+                }
+            }
+            else
+            {
+                InOut += "\nBatteries charged";
+            }
+
+            scr?.SetText($"{strVolume}\n{strVolumePersent}\n{InOut}\n");
+            scrq?.SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}");
+        }
+
+        #region SCR
+
+        public class SCR
+        {
+            public readonly string name;
+
+            public IMyTextPanel screen;
+            public IMyTextSurface surface;
+            private bool isInitWithPanel;
+
+            public SCR(IMyGridTerminalSystem grid, string name, bool initAsTxt = true, float fontSize = 1f)
+            {
+                this.name = name;
+                screen = (IMyTextPanel)grid.GetBlockWithName(name);
+                isInitWithPanel = true;
+                if (initAsTxt)
+                {
+                    SetAsTXT(fontSize);
+                }
+            }
+
+            public SCR(IMyTextPanel textPanel, string name, bool initAsTxt = true, float fontSize = 1f)
+            {
+                this.name = name;
+                screen = textPanel;
+                isInitWithPanel = true;
+                if (initAsTxt)
+                {
+                    SetAsTXT(fontSize);
+                }
+            }
+
+            public SCR(IMyCockpit cockpit, int index, bool initAsTxt = true, float fontSize = 1f)
+            {
+                name = index.ToString();
+                surface = cockpit.GetSurface(index);
+                isInitWithPanel = false;
+                if (initAsTxt)
+                {
+                    SetAsTXT(fontSize);
+                }
+            }
+
+            public SCR(IMyTextSurface surface, int index, bool initAsTxt = true, float fontSize = 1f)
+            {
+                name = index.ToString();
+                this.surface = surface;
+                isInitWithPanel = false;
+                if (initAsTxt)
+                {
+                    SetAsTXT(fontSize);
+                }
+            }
+
+            public static List<SCR> GetAll(IMyProgrammableBlock block, bool initAsTxt = true, float fontSize = 1f)
+            {
+                List<SCR> screens = new List<SCR>();
+                for (int i = 0; i < block.SurfaceCount; i++)
+                {
+                    screens.Add(new SCR(block.GetSurface(i), i, initAsTxt, fontSize));
+                }
+                return screens;
+            }
+
+            public static List<SCR> GetAll(IMyCockpit cockpit, bool initAsTxt = true, float fontSize = 1f)
+            {
+                List<SCR> screens = new List<SCR>();
+                for (int i = 0; i < cockpit.SurfaceCount; i++)
+                {
+                    screens.Add(new SCR(cockpit, i, initAsTxt, fontSize));
+                }
+                return screens;
+            }
+
+            public void SetAsTXT(float fontSize = 1.0f)
+            {
+                IMyTextSurface targetSurface = isInitWithPanel ? (IMyTextSurface)screen : surface;
+                if (targetSurface == null)
+                {
+                    return;
+                }
+
+                targetSurface.ContentType = ContentType.TEXT_AND_IMAGE;
+                targetSurface.Font = "Monospace";
+                targetSurface.FontSize = fontSize;
+                targetSurface.FontColor = new Color(0, 255, 100);
+                targetSurface.BackgroundColor = new Color(32, 32, 32);
+            }
+
+            public string Text
+            {
+                get
+                {
+                    if (isInitWithPanel)
+                    {
+                        return screen?.GetText();
+                    }
+                    else
+                    {
+                        return surface?.GetText();
+                    }
+                }
+                set
+                {
+                    if (isInitWithPanel)
+                    {
+                        screen?.WriteText(value);
+                    }
+                    else
+                    {
+                        surface?.WriteText(value);
+                    }
+                }
+            }
+
+            public void SetText(string value)
+            {
+                if (isInitWithPanel)
+                {
+                    screen?.WriteText(value);
+                }
+                else
+                {
+                    surface?.WriteText(value);
+                }
+            }
+        }
+
+        #endregion
+
+        #region toStr extensions
+
+        private string ValueToString(double count)
+        {
+            if (Math.Abs(count) >= 1000000000)
+            {
+                return (count / 1000000000).ToString("0.0") + "G";
+            }
+
+            if (Math.Abs(count) >= 1000000)
+            {
+                return (count / 1000000).ToString("0.0") + "M";
+            }
+
+            if (Math.Abs(count) >= 1000)
+            {
+                return (count / 1000).ToString("0.0") + "k";
+            }
+
+            return count.ToString("0.0");
+        }
+
+        private string CountToString(double count, string roundto = "0.0")
+        {
+            if (Math.Abs(count) >= 1000000000)
+            {
+                return (count / 1000000000).ToString(roundto) + "B";
+            }
+
+            if (Math.Abs(count) >= 1000000)
+            {
+                return (count / 1000000).ToString(roundto) + "M";
+            }
+
+            if (Math.Abs(count) >= 1000)
+            {
+                return (count / 1000).ToString(roundto) + "k";
+            }
+
+            if (Math.Abs(count) == Math.Abs(Math.Truncate(count)))
+            {
+                return count.ToString();
+            }
+
+            return count.ToString(roundto);
+        }
+
+        #endregion
+
+        #endregion
+    }
+}

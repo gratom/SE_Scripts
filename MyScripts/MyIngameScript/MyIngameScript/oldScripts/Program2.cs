@@ -26,7 +26,7 @@ using VRageMath;
 
 namespace IngameScriptCheckDamage
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
@@ -69,9 +69,9 @@ namespace IngameScriptCheckDamage
 
 namespace IngameScriptMiningCounter
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
@@ -127,14 +127,18 @@ namespace IngameScriptMiningCounter
 
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
@@ -153,8 +157,8 @@ namespace IngameScriptMiningCounter
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
 
                 List<MyInventoryItem> inventoryItem = new List<MyInventoryItem>();
                 invent.GetItems(inventoryItem);
@@ -170,13 +174,13 @@ namespace IngameScriptMiningCounter
                         {
                             others.Add(inventoryItem[j].Type.SubtypeId, 0);
                         }
-                        others[inventoryItem[j].Type.SubtypeId] += ((double)inventoryItem[j].Amount);
+                        others[inventoryItem[j].Type.SubtypeId] += (double)inventoryItem[j].Amount;
                     }
                 }
             }
 
             string strVolume = "Volume absolute : " + ValueToString(volumeSum * 1000) + "l / " + ValueToString(volumeMax * 1000) + "l";
-            string strVolumePersent = "Volume percent : " + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Volume percent : " + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             string OtherString = "Ores:\n";
             foreach (KeyValuePair<string, double> item in others)
@@ -207,10 +211,10 @@ namespace IngameScriptMiningCounter
             }
 
             string strEn1 = "Energy : " + CountToString(Sum * 1000000) + "wh / " + CountToString(Max * 1000000) + "wh";
-            string steEnPers = "Energy percent : " + ((Sum / Max) * 100).ToString("0.0") + "%";
+            string steEnPers = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
             string InOut = "in : +" + CountToString(EnPlus * 1000000) + "wh" +
                            "\nout : -" + CountToString(EnMinus * 1000000) + "wh" +
-                           "\ntotal : " + CountToString(((EnPlus - EnMinus) * 1000000)) + "wh";
+                           "\ntotal : " + CountToString((EnPlus - EnMinus) * 1000000) + "wh";
             double time = (Max - Sum) / (EnPlus - EnMinus);
             long timeTicks = (long)(time * 3600 * 10000000);
             TimeSpan timeSpan = new TimeSpan(timeTicks);
@@ -232,8 +236,8 @@ namespace IngameScriptMiningCounter
                 OxySum += gasOxy[i].FilledRatio * gasOxy[i].Capacity;
             }
             string oxyState = "oxygen : " + CountToString(OxySum) + "/" + CountToString(OxyCapacity) +
-                "\nin tanks : " + ((OxySum / OxyCapacity) * 100).ToString("0.00") +
-                "%\nin room : " + (vent.GetOxygenLevel() * 100).ToString("0.0000") + "%";
+                              "\nin tanks : " + (OxySum / OxyCapacity * 100).ToString("0.00") +
+                              "%\nin room : " + (vent.GetOxygenLevel() * 100).ToString("0.0000") + "%";
 
             double HydroCapacity = 0;
             double HydroSum = 0;
@@ -265,18 +269,18 @@ namespace IngameScriptMiningCounter
             prevCurrentHydro = HydroSum;
 
             string hydroState = "hydro : " + CountToString(HydroSum) + "/" + CountToString(HydroCapacity) +
-                "\nin tanks : " + ((HydroSum / HydroCapacity) * 100).ToString("0.00") + "%" + chardgeState;
+                                "\nin tanks : " + (HydroSum / HydroCapacity * 100).ToString("0.00") + "%" + chardgeState;
 
             screen3.WriteText(OtherString);
             screen2.WriteText(oxyState);
             screen.WriteText(strVolume +
-                "\n" + strVolumePersent +
-                "\nEngines : " + ((sumEnginesCur / sumEnginesMax) * 100).ToString("0.0") + "%" +
-                "\n" + hydroState +
-                "\n\n" + strEn1 + "\n" + steEnPers + "\n" + InOut);
+                             "\n" + strVolumePersent +
+                             "\nEngines : " + (sumEnginesCur / sumEnginesMax * 100).ToString("0.0") + "%" +
+                             "\n" + hydroState +
+                             "\n\n" + strEn1 + "\n" + steEnPers + "\n" + InOut);
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -296,7 +300,7 @@ namespace IngameScriptMiningCounter
             return count.ToString("0.0");
         }
 
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (count >= 1000000000)
             {
@@ -327,7 +331,7 @@ namespace IngameScriptAutoPilot
 
 namespace IngameScript2.ServerScripts2
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private IMyTextPanel screen;
@@ -367,16 +371,16 @@ namespace IngameScript2.ServerScripts2
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
             for (int i = 0; i < drills.Count; i++)
             {
                 IMyInventory invent = drills[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
-            string strVolumeCargoPersent = "Cargo : " + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strVolumeCargoPersent = "Cargo : " + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             string s = "";
             for (int i = 0; i < blocks.Count; i++)
@@ -400,7 +404,7 @@ namespace IngameScript2.ServerScripts2
             screen.WriteText(strVolumeCargoPersent);
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -420,7 +424,7 @@ namespace IngameScript2.ServerScripts2
             return count.ToString("0.0");
         }
 
-        string CountToString(double count)
+        private string CountToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -445,7 +449,7 @@ namespace IngameScript2.ServerScripts2
 
 namespace IngameScript2.ServerScripts3Solars
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private enum RotorType
@@ -576,7 +580,7 @@ namespace IngameScript2.ServerScripts3Solars
 
         private void MakeRedLamps()
         {
-            foreach (var lamp in lamps)
+            foreach (IMyLightingBlock lamp in lamps)
             {
                 lamp.Color = Color.Red;
             }
@@ -584,7 +588,7 @@ namespace IngameScript2.ServerScripts3Solars
 
         private void MakeGreenLamps()
         {
-            foreach (var lamp in lamps)
+            foreach (IMyLightingBlock lamp in lamps)
             {
                 lamp.Color = Color.Green;
             }
@@ -628,7 +632,7 @@ namespace IngameScript2.ServerScripts3Solars
 
 namespace IngameScript10.MegaDrill
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         /// <summary>
         /// Base class for all average types
@@ -757,7 +761,7 @@ namespace IngameScript10.MegaDrill
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 isInitWithPanel = false;
             }
@@ -813,112 +817,114 @@ namespace IngameScript10.MegaDrill
         private List<IMyProductionBlock> assemblers = new List<IMyProductionBlock>();
         private List<IMyRefinery> refineries = new List<IMyRefinery>();
         private Dictionary<string, AverageDouble> refinesTotal = new Dictionary<string, AverageDouble>();
-        Dictionary<string, double> prevRefine = new Dictionary<string, double>();
+        private Dictionary<string, double> prevRefine = new Dictionary<string, double>();
 
         private float addCraftValue = 0.02f;
 
         #region addition dictionaries
+
         private Dictionary<string, int> componentsMinimum = new Dictionary<string, int>()
         {
-            { "BulletproofGlass", 0},                     //бронестекло
-            { "ComputerComponent", 0},                   //компьютер
-            { "ConstructionComponent", 0},               //строительный компонент
-            { "DetectorComponent", 0},                     //компоненты детектора руды
-            { "Display", 0},                               //экран
-            { "ExplosivesComponent", 0},                   //взрывчатка
-            { "GirderComponent", 0},                      //балки
-            { "GravityGeneratorComponent", 0},             //компоненты грави-генератора
-            { "InteriorPlate", 0},                       //внутренняя пластина
-            { "LargeTube", 0},                           //большая труба
-            { "MedicalComponent", 0},                      //медицинские компоненты
-            { "MetalGrid", 0},                            //решетка
-            { "MotorComponent", 0},                       //мотор
-            { "PowerCell", 0},                           //батарея
-            { "RadioCommunicationComponent", 0},           //радио-компоненты
-            { "ReactorComponent", 0},                      //реакторные компоненты
-            { "SmallTube", 0},                            //малая труба
-            { "SolarCell", 0},                            //солненые ячейки
-            { "SteelPlate", 0},                          //стальная пластина
-            { "Superconductor", 0},                       //сверхпроводник
-            { "ThrustComponent", 0},                      //ионный ускоритель
+            { "BulletproofGlass", 0 }, //бронестекло
+            { "ComputerComponent", 0 }, //компьютер
+            { "ConstructionComponent", 0 }, //строительный компонент
+            { "DetectorComponent", 0 }, //компоненты детектора руды
+            { "Display", 0 }, //экран
+            { "ExplosivesComponent", 0 }, //взрывчатка
+            { "GirderComponent", 0 }, //балки
+            { "GravityGeneratorComponent", 0 }, //компоненты грави-генератора
+            { "InteriorPlate", 0 }, //внутренняя пластина
+            { "LargeTube", 0 }, //большая труба
+            { "MedicalComponent", 0 }, //медицинские компоненты
+            { "MetalGrid", 0 }, //решетка
+            { "MotorComponent", 0 }, //мотор
+            { "PowerCell", 0 }, //батарея
+            { "RadioCommunicationComponent", 0 }, //радио-компоненты
+            { "ReactorComponent", 0 }, //реакторные компоненты
+            { "SmallTube", 0 }, //малая труба
+            { "SolarCell", 0 }, //солненые ячейки
+            { "SteelPlate", 0 }, //стальная пластина
+            { "Superconductor", 0 }, //сверхпроводник
+            { "ThrustComponent", 0 } //ионный ускоритель
         };
 
         private Dictionary<string, MyDefinitionId> blueprints = new Dictionary<string, MyDefinitionId>()
         {
-            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass")},
-            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent")},
-            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent")},
-            { "DetectorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/DetectorComponent")},
-            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display")},
-            { "ExplosivesComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ExplosivesComponent")},
-            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent")},
-            { "GravityGeneratorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GravityGeneratorComponent")},
-            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate")},
-            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube")},
-            { "MedicalComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MedicalComponent")},
-            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid")},
-            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent")},
-            { "PowerCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/PowerCell")},
-            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent")},
-            { "ReactorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ReactorComponent")},
-            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube")},
-            { "SolarCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SolarCell")},
-            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate")},
-            { "Superconductor", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Superconductor")},
-            { "ThrustComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ThrustComponent")},
+            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass") },
+            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent") },
+            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent") },
+            { "DetectorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/DetectorComponent") },
+            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display") },
+            { "ExplosivesComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ExplosivesComponent") },
+            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent") },
+            { "GravityGeneratorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GravityGeneratorComponent") },
+            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate") },
+            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube") },
+            { "MedicalComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MedicalComponent") },
+            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid") },
+            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent") },
+            { "PowerCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/PowerCell") },
+            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent") },
+            { "ReactorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ReactorComponent") },
+            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube") },
+            { "SolarCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SolarCell") },
+            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate") },
+            { "Superconductor", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Superconductor") },
+            { "ThrustComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ThrustComponent") }
         };
 
         private Dictionary<string, string> blueprintsToTypes = new Dictionary<string, string>()
         {
-            { "BulletproofGlass",          "BulletproofGlass"},
-            { "ComputerComponent",         "Computer"},
-            { "ConstructionComponent",     "Construction"},
-            { "DetectorComponent",         "Detector"},
-            { "Display",                   "Display"},
-            { "ExplosivesComponent",       "Explosives"},
-            { "GirderComponent",           "Girder"},
-            { "GravityGeneratorComponent", "GravityGenerator"},
-            { "InteriorPlate",             "InteriorPlate"},
-            { "LargeTube",                 "LargeTube"},
-            { "MedicalComponent",          "Medical"},
-            { "MetalGrid",                 "MetalGrid"},
-            { "MotorComponent",            "Motor"},
-            { "PowerCell",                 "PowerCell"},
-            { "RadioCommunicationComponent", "RadioCommunication"},
-            { "ReactorComponent",          "Reactor"},
-            { "SmallTube",                 "SmallTube"},
-            { "SolarCell",                 "SolarCell"},
-            { "SteelPlate",                "SteelPlate"},
-            { "Superconductor",            "Superconductor"},
-            { "ThrustComponent",           "Thrust"},
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "ComputerComponent", "Computer" },
+            { "ConstructionComponent", "Construction" },
+            { "DetectorComponent", "Detector" },
+            { "Display", "Display" },
+            { "ExplosivesComponent", "Explosives" },
+            { "GirderComponent", "Girder" },
+            { "GravityGeneratorComponent", "GravityGenerator" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "LargeTube", "LargeTube" },
+            { "MedicalComponent", "Medical" },
+            { "MetalGrid", "MetalGrid" },
+            { "MotorComponent", "Motor" },
+            { "PowerCell", "PowerCell" },
+            { "RadioCommunicationComponent", "RadioCommunication" },
+            { "ReactorComponent", "Reactor" },
+            { "SmallTube", "SmallTube" },
+            { "SolarCell", "SolarCell" },
+            { "SteelPlate", "SteelPlate" },
+            { "Superconductor", "Superconductor" },
+            { "ThrustComponent", "Thrust" }
         };
 
 
 
         private Dictionary<string, string> typesToBlueprints = new Dictionary<string, string>()
         {
-            {"BulletproofGlass"    ,"BulletproofGlass"              },
-            {"Computer"            ,"ComputerComponent"              },
-            {"Construction"        ,"ConstructionComponent"        },
-            {"Detector"            ,"DetectorComponent"            },
-            {"Display"             ,"Display"                      },
-            {"Explosives"          ,"ExplosivesComponent"          },
-            {"Girder"              ,"GirderComponent"              },
-            {"GravityGenerator"    ,"GravityGeneratorComponent"        },
-            {"InteriorPlate"       ,"InteriorPlate"                    },
-            {"LargeTube"           ,"LargeTube"                         },
-            {"Medical"             ,"MedicalComponent"                 },
-            {"MetalGrid"           ,"MetalGrid"                        },
-            {"Motor"               ,"MotorComponent"                     },
-            {"PowerCell"           ,"PowerCell"                          },
-            {"RadioCommunication"  ,"RadioCommunicationComponent"    },
-            {"Reactor"             ,"ReactorComponent"                },
-            {"SmallTube"           ,"SmallTube"                       },
-            {"SolarCell"           ,"SolarCell"                       },
-            {"SteelPlate"          ,"SteelPlate"                       },
-            {"Superconductor"      ,"Superconductor"                      },
-            {"Thrust"              ,"ThrustComponent"              },
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "Computer", "ComputerComponent" },
+            { "Construction", "ConstructionComponent" },
+            { "Detector", "DetectorComponent" },
+            { "Display", "Display" },
+            { "Explosives", "ExplosivesComponent" },
+            { "Girder", "GirderComponent" },
+            { "GravityGenerator", "GravityGeneratorComponent" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "LargeTube", "LargeTube" },
+            { "Medical", "MedicalComponent" },
+            { "MetalGrid", "MetalGrid" },
+            { "Motor", "MotorComponent" },
+            { "PowerCell", "PowerCell" },
+            { "RadioCommunication", "RadioCommunicationComponent" },
+            { "Reactor", "ReactorComponent" },
+            { "SmallTube", "SmallTube" },
+            { "SolarCell", "SolarCell" },
+            { "SteelPlate", "SteelPlate" },
+            { "Superconductor", "Superconductor" },
+            { "Thrust", "ThrustComponent" }
         };
+
         #endregion
 
         public Program()
@@ -943,6 +949,7 @@ namespace IngameScript10.MegaDrill
         }
 
         #region initing
+
         private void InitRefinery()
         {
             GridTerminalSystem.GetBlocksOfType<IMyRefinery>(refineries);
@@ -973,6 +980,7 @@ namespace IngameScript10.MegaDrill
             }
             screens.Add(new SCR(GridTerminalSystem, "DrillMegaDisp"));
         }
+
         #endregion
 
         public void BatteriesInfo(string arg)
@@ -994,16 +1002,16 @@ namespace IngameScript10.MegaDrill
             }
 
             string strVolume = "Energy : " + CountToString(Sum * 1000000) + "w / " + CountToString(Max * 1000000) + "w";
-            string strVolumePersent = "Energy percent : " + ((Sum / Max) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
             string InOut = "in : +" + CountToString(EnPlus * 1000000) + "wh" +
                            "\nout : -" + CountToString(EnMinus * 1000000) + "wh" +
-                           "\ntotal : " + CountToString(((EnPlus - EnMinus) * 1000000)) + "wh";
+                           "\ntotal : " + CountToString((EnPlus - EnMinus) * 1000000) + "wh";
             double time = (Max - Sum) / (EnPlus - EnMinus);
 
             long timeTicks = (long)(time * 3600 * 10000000);
             TimeSpan timeSpan = new TimeSpan(timeTicks);
 
-            if ((Sum / Max) * 100 < 99)
+            if (Sum / Max * 100 < 99)
             {
                 if (time > 0)
                 {
@@ -1011,7 +1019,7 @@ namespace IngameScript10.MegaDrill
                 }
                 else
                 {
-                    double timeToDiscarge = (Sum) / (EnPlus - EnMinus);
+                    double timeToDiscarge = Sum / (EnPlus - EnMinus);
                     long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
                     TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicks);
                     InOut += "\ntime to discharge : " + timeSpanToDiscarge.ToString(@"dd\.hh\:mm\:ss");
@@ -1034,8 +1042,8 @@ namespace IngameScript10.MegaDrill
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
 
             screens[1].Text = "1";
@@ -1046,8 +1054,8 @@ namespace IngameScript10.MegaDrill
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
 
                 List<MyInventoryItem> inventoryItem = new List<MyInventoryItem>();
                 invent.GetItems(inventoryItem);
@@ -1060,7 +1068,7 @@ namespace IngameScript10.MegaDrill
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)inventoryItem[j].Amount);
+                        components[key] += (double)inventoryItem[j].Amount;
                     }
                     else
                     {
@@ -1071,7 +1079,7 @@ namespace IngameScript10.MegaDrill
                             {
                                 others.Add(key, 0);
                             }
-                            others[key] += ((double)inventoryItem[j].Amount);
+                            others[key] += (double)inventoryItem[j].Amount;
                         }
                     }
                 }
@@ -1092,14 +1100,14 @@ namespace IngameScript10.MegaDrill
                     {
                         production.Add(key, 0);
                     }
-                    production[key] += ((int)item.Amount);
+                    production[key] += (int)item.Amount;
                 }
 
                 IMyInventory asmInvent = asm.OutputInventory;
                 List<MyInventoryItem> inventoryItems = new List<MyInventoryItem>();
                 asmInvent.GetItems(inventoryItems);
 
-                foreach (var item in inventoryItems)
+                foreach (MyInventoryItem item in inventoryItems)
                 {
                     if (item.Type.TypeId.Contains("Component"))
                     {
@@ -1108,11 +1116,11 @@ namespace IngameScript10.MegaDrill
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)item.Amount);
+                        components[key] += (double)item.Amount;
 
                         IMyInventory inventTo = containersForCraft.FirstOrDefault(x =>
                         {
-                            return (x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume) > item.Amount;
+                            return x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume > item.Amount;
                         })?.GetInventory();
                         asmInvent.TransferItemTo(inventTo, item);
 
@@ -1160,33 +1168,37 @@ namespace IngameScript10.MegaDrill
             screens[1].Text = "4";
 
             string strCargo = "Cargo absolute : " + ValueToString(volumeSum * 1000) + "l / " + ValueToString(volumeMax * 1000) + "l";
-            string strCargoPersent = "\nCargo percent : " + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strCargoPersent = "\nCargo percent : " + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             screens[1].Text = "5";
 
             screens[3].Text = /*strCargo +*/ strCargoPersent;
-            screens[6].Text = ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            screens[6].Text = (volumeSum / volumeMax * 100).ToString("0.0") + "%";
         }
 
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
             none
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -1206,7 +1218,7 @@ namespace IngameScript10.MegaDrill
             return count.ToString("0.0");
         }
 
-        string CountToString(double count, string roundto = "0.0")
+        private string CountToString(double count, string roundto = "0.0")
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -1233,7 +1245,7 @@ namespace IngameScript10.MegaDrill
 
         private double Clamp(double x, double min, double max)
         {
-            return (x < min) ? min : ((x > max) ? max : x);
+            return x < min ? min : x > max ? max : x;
         }
 
     }
@@ -1242,7 +1254,7 @@ namespace IngameScript10.MegaDrill
 namespace IngameScript10.DynamicGyros
 {
 
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
 
         private float minGyroPower = 0.01f;
@@ -1287,14 +1299,14 @@ namespace IngameScript10.DynamicGyros
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
-            double percent = (volumeSum / volumeMax);
+            double percent = volumeSum / volumeMax;
 
             foreach (IMyGyro gyro in gyros)
             {
-                gyro.GyroPower = (float)(minGyroPower + (percent * (1 - minGyroPower))) * maxGyroPower;
+                gyro.GyroPower = (float)(minGyroPower + percent * (1 - minGyroPower)) * maxGyroPower;
             }
 
         }
@@ -1303,7 +1315,7 @@ namespace IngameScript10.DynamicGyros
 
 namespace IngameScript10.TS
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         public abstract class AbstractAverage<T> where T : new()
         {
@@ -1406,7 +1418,7 @@ namespace IngameScript10.TS
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.FontColor = new Color(105, 255, 187);
                 isInitWithPanel = false;
@@ -1464,146 +1476,147 @@ namespace IngameScript10.TS
         private const string jumpDriveName = "jumpdrive";
 
         private Dictionary<string, AverageDouble> incomeTotal = new Dictionary<string, AverageDouble>();
-        Dictionary<string, double> prevCount = new Dictionary<string, double>();
+        private Dictionary<string, double> prevCount = new Dictionary<string, double>();
 
         private float addCraftValue = 0.02f;
 
         #region addition dictionaries
+
         private Dictionary<string, int> componentsMinimum = new Dictionary<string, int>()
         {
-            { "BulletproofGlass", 200000},                     //бронестекло
-            { "ComputerComponent", 1000000},                   //компьютер
-            { "ConstructionComponent", 1000000},               //строительный компонент
-            { "DetectorComponent", 10000},                     //компоненты детектора руды
-            { "Display", 10000},                               //экран
-            { "ExplosivesComponent", 10000},                   //взрывчатка
-            { "GirderComponent", 200000},                      //балки
-            { "GravityGeneratorComponent", 10000},             //компоненты грави-генератора
-            { "InteriorPlate", 1000000},                       //внутренняя пластина
-            { "LargeTube", 300000},                           //большая труба
-            { "MedicalComponent", 10000},                      //медицинские компоненты
-            { "MetalGrid", 500000},                            //решетка
-            { "MotorComponent", 500000},                       //мотор
-            { "PowerCell", 1000000},                           //батарея
-            { "RadioCommunicationComponent", 10000},           //радио-компоненты
-            { "ReactorComponent", 20000},                      //реакторные компоненты
-            { "SmallTube", 500000},                            //малая труба
-            { "SolarCell", 100000},                            //солненые ячейки
-            { "SteelPlate", 2000000},                          //стальная пластина
-            { "Superconductor", 200000},                       //сверхпроводник
-            { "ThrustComponent", 150000},                      //ионный ускоритель
+            { "BulletproofGlass", 200000 }, //бронестекло
+            { "ComputerComponent", 1000000 }, //компьютер
+            { "ConstructionComponent", 1000000 }, //строительный компонент
+            { "DetectorComponent", 10000 }, //компоненты детектора руды
+            { "Display", 10000 }, //экран
+            { "ExplosivesComponent", 10000 }, //взрывчатка
+            { "GirderComponent", 200000 }, //балки
+            { "GravityGeneratorComponent", 10000 }, //компоненты грави-генератора
+            { "InteriorPlate", 1000000 }, //внутренняя пластина
+            { "LargeTube", 300000 }, //большая труба
+            { "MedicalComponent", 10000 }, //медицинские компоненты
+            { "MetalGrid", 500000 }, //решетка
+            { "MotorComponent", 500000 }, //мотор
+            { "PowerCell", 1000000 }, //батарея
+            { "RadioCommunicationComponent", 10000 }, //радио-компоненты
+            { "ReactorComponent", 20000 }, //реакторные компоненты
+            { "SmallTube", 500000 }, //малая труба
+            { "SolarCell", 100000 }, //солненые ячейки
+            { "SteelPlate", 2000000 }, //стальная пластина
+            { "Superconductor", 200000 }, //сверхпроводник
+            { "ThrustComponent", 150000 } //ионный ускоритель
         };
         private Dictionary<string, MyDefinitionId> blueprints = new Dictionary<string, MyDefinitionId>()
         {
-            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass")},
-            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent")},
-            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent")},
-            { "DetectorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/DetectorComponent")},
-            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display")},
-            { "ExplosivesComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ExplosivesComponent")},
-            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent")},
-            { "GravityGeneratorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GravityGeneratorComponent")},
-            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate")},
-            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube")},
-            { "MedicalComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MedicalComponent")},
-            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid")},
-            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent")},
-            { "PowerCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/PowerCell")},
-            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent")},
-            { "ReactorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ReactorComponent")},
-            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube")},
-            { "SolarCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SolarCell")},
-            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate")},
-            { "Superconductor", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Superconductor")},
-            { "ThrustComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ThrustComponent")},
+            { "BulletproofGlass", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/BulletproofGlass") },
+            { "ComputerComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ComputerComponent") },
+            { "ConstructionComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ConstructionComponent") },
+            { "DetectorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/DetectorComponent") },
+            { "Display", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Display") },
+            { "ExplosivesComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ExplosivesComponent") },
+            { "GirderComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GirderComponent") },
+            { "GravityGeneratorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/GravityGeneratorComponent") },
+            { "InteriorPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/InteriorPlate") },
+            { "LargeTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/LargeTube") },
+            { "MedicalComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MedicalComponent") },
+            { "MetalGrid", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MetalGrid") },
+            { "MotorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/MotorComponent") },
+            { "PowerCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/PowerCell") },
+            { "RadioCommunicationComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/RadioCommunicationComponent") },
+            { "ReactorComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ReactorComponent") },
+            { "SmallTube", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SmallTube") },
+            { "SolarCell", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SolarCell") },
+            { "SteelPlate", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/SteelPlate") },
+            { "Superconductor", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/Superconductor") },
+            { "ThrustComponent", MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/ThrustComponent") }
         };
         private Dictionary<string, string> blueprintsToTypes = new Dictionary<string, string>()
         {
-            { "BulletproofGlass",          "BulletproofGlass"},
-            { "ComputerComponent",         "Computer"},
-            { "ConstructionComponent",     "Construction"},
-            { "DetectorComponent",         "Detector"},
-            { "Display",                   "Display"},
-            { "ExplosivesComponent",       "Explosives"},
-            { "GirderComponent",           "Girder"},
-            { "GravityGeneratorComponent", "GravityGenerator"},
-            { "InteriorPlate",             "InteriorPlate"},
-            { "LargeTube",                 "LargeTube"},
-            { "MedicalComponent",          "Medical"},
-            { "MetalGrid",                 "MetalGrid"},
-            { "MotorComponent",            "Motor"},
-            { "PowerCell",                 "PowerCell"},
-            { "RadioCommunicationComponent", "RadioCommunication"},
-            { "ReactorComponent",          "Reactor"},
-            { "SmallTube",                 "SmallTube"},
-            { "SolarCell",                 "SolarCell"},
-            { "SteelPlate",                "SteelPlate"},
-            { "Superconductor",            "Superconductor"},
-            { "ThrustComponent",           "Thrust"},
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "ComputerComponent", "Computer" },
+            { "ConstructionComponent", "Construction" },
+            { "DetectorComponent", "Detector" },
+            { "Display", "Display" },
+            { "ExplosivesComponent", "Explosives" },
+            { "GirderComponent", "Girder" },
+            { "GravityGeneratorComponent", "GravityGenerator" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "LargeTube", "LargeTube" },
+            { "MedicalComponent", "Medical" },
+            { "MetalGrid", "MetalGrid" },
+            { "MotorComponent", "Motor" },
+            { "PowerCell", "PowerCell" },
+            { "RadioCommunicationComponent", "RadioCommunication" },
+            { "ReactorComponent", "Reactor" },
+            { "SmallTube", "SmallTube" },
+            { "SolarCell", "SolarCell" },
+            { "SteelPlate", "SteelPlate" },
+            { "Superconductor", "Superconductor" },
+            { "ThrustComponent", "Thrust" }
         };
         private Dictionary<string, string> typesToBlueprints = new Dictionary<string, string>()
         {
-            {"BulletproofGlass"    ,"BulletproofGlass"              },
-            {"Computer"            ,"ComputerComponent"              },
-            {"Construction"        ,"ConstructionComponent"        },
-            {"Detector"            ,"DetectorComponent"            },
-            {"Display"             ,"Display"                      },
-            {"Explosives"          ,"ExplosivesComponent"          },
-            {"Girder"              ,"GirderComponent"              },
-            {"GravityGenerator"    ,"GravityGeneratorComponent"        },
-            {"InteriorPlate"       ,"InteriorPlate"                    },
-            {"LargeTube"           ,"LargeTube"                         },
-            {"Medical"             ,"MedicalComponent"                 },
-            {"MetalGrid"           ,"MetalGrid"                        },
-            {"Motor"               ,"MotorComponent"                     },
-            {"PowerCell"           ,"PowerCell"                          },
-            {"RadioCommunication"  ,"RadioCommunicationComponent"    },
-            {"Reactor"             ,"ReactorComponent"                },
-            {"SmallTube"           ,"SmallTube"                       },
-            {"SolarCell"           ,"SolarCell"                       },
-            {"SteelPlate"          ,"SteelPlate"                       },
-            {"Superconductor"      ,"Superconductor"                      },
-            {"Thrust"              ,"ThrustComponent"              },
+            { "BulletproofGlass", "BulletproofGlass" },
+            { "Computer", "ComputerComponent" },
+            { "Construction", "ConstructionComponent" },
+            { "Detector", "DetectorComponent" },
+            { "Display", "Display" },
+            { "Explosives", "ExplosivesComponent" },
+            { "Girder", "GirderComponent" },
+            { "GravityGenerator", "GravityGeneratorComponent" },
+            { "InteriorPlate", "InteriorPlate" },
+            { "LargeTube", "LargeTube" },
+            { "Medical", "MedicalComponent" },
+            { "MetalGrid", "MetalGrid" },
+            { "Motor", "MotorComponent" },
+            { "PowerCell", "PowerCell" },
+            { "RadioCommunication", "RadioCommunicationComponent" },
+            { "Reactor", "ReactorComponent" },
+            { "SmallTube", "SmallTube" },
+            { "SolarCell", "SolarCell" },
+            { "SteelPlate", "SteelPlate" },
+            { "Superconductor", "Superconductor" },
+            { "Thrust", "ThrustComponent" }
         };
 
         private Dictionary<string, double> costsResources = new Dictionary<string, double>()
         {
-            {"IngotPlatinum", 120000 },
-            {"IngotGold", 17000 },
-            {"IngotCobalt", 1300 },
-            {"IngotMagnesium", 30000 },
-            {"IngotSilver", 1800 },
-            {"IngotUranium", 64000 },
-            {"IngotIron", 145 },
-            {"IngotSilicon", 165 },
-            {"IngotNickel", 292 },
+            { "IngotPlatinum", 120000 },
+            { "IngotGold", 17000 },
+            { "IngotCobalt", 1300 },
+            { "IngotMagnesium", 30000 },
+            { "IngotSilver", 1800 },
+            { "IngotUranium", 64000 },
+            { "IngotIron", 145 },
+            { "IngotSilicon", 165 },
+            { "IngotNickel", 292 },
 
-            { "BulletproofGlass", 1015},                     //бронестекло
-            { "ComputerComponent", 43},                   //компьютер
-            { "ConstructionComponent", 475},               //строительный компонент
-            { "DetectorComponent", 2613},                     //компоненты детектора руды
-            { "Display", 398},                               //экран
-            { "ExplosivesComponent", 35691},                   //взрывчатка
-            { "GirderComponent", 358},                      //балки
-            { "GravityGeneratorComponent", 385875},             //компоненты грави-генератора
-            { "InteriorPlate", 179},                       //внутренняя пластина
-            { "LargeTube", 1980},                           //большая труба
-            { "MedicalComponent", 43072},                      //медицинские компоненты
-            { "MetalGrid", 3454},                            //решетка
-            { "MotorComponent", 2123},                       //мотор
-            { "PowerCell", 1125},                           //батарея
-            { "RadioCommunicationComponent", 678},           //радио-компоненты
-            { "ReactorComponent", 8478},                      //реакторные компоненты
-            { "SmallTube", 297},                            //малая труба
-            { "SolarCell", 849},                            //солненые ячейки
-            { "SteelPlate", 1249},                          //стальная пластина
-            { "Superconductor", 26524},                       //сверхпроводник
-            { "ThrustComponent", 45068},                      //ионный ускоритель
+            { "BulletproofGlass", 1015 }, //бронестекло
+            { "ComputerComponent", 43 }, //компьютер
+            { "ConstructionComponent", 475 }, //строительный компонент
+            { "DetectorComponent", 2613 }, //компоненты детектора руды
+            { "Display", 398 }, //экран
+            { "ExplosivesComponent", 35691 }, //взрывчатка
+            { "GirderComponent", 358 }, //балки
+            { "GravityGeneratorComponent", 385875 }, //компоненты грави-генератора
+            { "InteriorPlate", 179 }, //внутренняя пластина
+            { "LargeTube", 1980 }, //большая труба
+            { "MedicalComponent", 43072 }, //медицинские компоненты
+            { "MetalGrid", 3454 }, //решетка
+            { "MotorComponent", 2123 }, //мотор
+            { "PowerCell", 1125 }, //батарея
+            { "RadioCommunicationComponent", 678 }, //радио-компоненты
+            { "ReactorComponent", 8478 }, //реакторные компоненты
+            { "SmallTube", 297 }, //малая труба
+            { "SolarCell", 849 }, //солненые ячейки
+            { "SteelPlate", 1249 }, //стальная пластина
+            { "Superconductor", 26524 }, //сверхпроводник
+            { "ThrustComponent", 45068 } //ионный ускоритель
         };
 
         #endregion
 
-        IMyProgrammableBlock programmableBlock;
+        private IMyProgrammableBlock programmableBlock;
 
         public Program()
         {
@@ -1628,7 +1641,7 @@ namespace IngameScript10.TS
             sDebug = "";
 
             BatteriesInfo(argument);
-            CargoInfo(argument);
+            CargoInfo();
             RefineryClearing();
             JumpDriveInfo();
             CloseDoors();
@@ -1662,7 +1675,7 @@ namespace IngameScript10.TS
             string percentJumpStr = "";
             foreach (IMyJumpDrive jd in jumpDrives)
             {
-                float percentJump = (jd.CurrentStoredPower / jd.MaxStoredPower) * 100;
+                float percentJump = jd.CurrentStoredPower / jd.MaxStoredPower * 100;
                 percentJumpStr += jd.CustomName + " power : " + percentJump.ToString("0.0") + "%";
                 if (percentJump == 100f)
                 {
@@ -1676,7 +1689,7 @@ namespace IngameScript10.TS
 
         private void RefineryClearing()
         {
-            foreach (var refinery in refineries)
+            foreach (IMyRefinery refinery in refineries)
             {
                 TryTransferItems(refinery, containers);
             }
@@ -1687,21 +1700,27 @@ namespace IngameScript10.TS
         public bool TryTransferItems(IMyRefinery refinery, List<IMyCargoContainer> containers)
         {
             if (refinery == null || containers == null || containers.Count == 0)
+            {
                 return false;
+            }
 
-            var outputInventory = refinery.OutputInventory;
+            IMyInventory outputInventory = refinery.OutputInventory;
 
             if (outputInventory.VolumeFillFactor <= 0f)
+            {
                 return false;
+            }
 
             List<IMyCargoContainer> availableContainers = containers.Where(c => !c.GetInventory().IsFull).ToList();
 
             if (availableContainers.Count == 0)
+            {
                 return false;
+            }
 
             Random random = new Random();
             IMyCargoContainer selectedContainer = availableContainers[random.Next(availableContainers.Count)];
-            var containerInventory = selectedContainer.GetInventory();
+            IMyInventory containerInventory = selectedContainer.GetInventory();
 
             for (int i = 0; i < outputInventory.ItemCount; i++)
             {
@@ -1731,9 +1750,10 @@ namespace IngameScript10.TS
         }
 
         #region initing
+
         private void InitUpdateScreen()
         {
-            programmableBlock = this.Me;
+            programmableBlock = Me;
 
         }
 
@@ -1767,9 +1787,11 @@ namespace IngameScript10.TS
             {
                 screens.Add(new SCR(GridTerminalSystem, name));
             }
+
             //IMyCockpit myCockpit = (IMyCockpit)GridTerminalSystem.GetBlockWithName("TS_kock");
             //screens.Add(new SCR(myCockpit, 0));
         }
+
         #endregion
 
         public void BatteriesInfo(string arg)
@@ -1791,16 +1813,16 @@ namespace IngameScript10.TS
             }
 
             string strVolume = "Energy : " + ValueToString(Sum * 1000000) + "wh / " + ValueToString(Max * 1000000) + "wh";
-            string strVolumePersent = "Energy percent : " + ((Sum / Max) * 100).ToString("0.0") + "%";
+            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
             string InOut = "in : +" + ValueToString(EnPlus * 1000000) + "w" +
                            "\nout : -" + ValueToString(EnMinus * 1000000) + "w" +
-                           "\ntotal : " + ValueToString(((EnPlus - EnMinus) * 1000000)) + "w";
+                           "\ntotal : " + ValueToString((EnPlus - EnMinus) * 1000000) + "w";
             double time = (Max - Sum) / (EnPlus - EnMinus);
 
             long timeTicks = (long)(time * 3600 * 10000000);
             TimeSpan timeSpan = new TimeSpan(timeTicks);
 
-            if ((Sum / Max) * 100 < 99)
+            if (Sum / Max * 100 < 99)
             {
                 if (time > 0)
                 {
@@ -1808,7 +1830,7 @@ namespace IngameScript10.TS
                 }
                 else
                 {
-                    double timeToDiscarge = (Sum) / (EnPlus - EnMinus);
+                    double timeToDiscarge = Sum / (EnPlus - EnMinus);
                     long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
                     TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicksToDiscarge);
                     InOut += "\ntime to discharge : " + timeSpanToDiscarge.ToString(@"dd\.hh\:mm\:ss");
@@ -1822,7 +1844,7 @@ namespace IngameScript10.TS
             screens[0].Text = strVolume + "\n" + strVolumePersent + "\n" + InOut + "\n";
         }
 
-        private void CargoInfo(string arg)
+        private void CargoInfo()
         {
             screens[1].Text = "0";
 
@@ -1831,8 +1853,8 @@ namespace IngameScript10.TS
             for (int i = 0; i < containers.Count; i++)
             {
                 IMyInventory invent = containers[i].GetInventory();
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
             }
 
             Dictionary<string, double> components = new Dictionary<string, double>();
@@ -1841,10 +1863,10 @@ namespace IngameScript10.TS
             List<IMyInventory> inventories = containers.Select(x => x.GetInventory()).ToList();
             inventories.AddRange(refineries.Select(x => x.GetInventory()).ToList());
 
-            foreach (var invent in inventories)
+            foreach (IMyInventory invent in inventories)
             {
-                volumeMax += ((double)invent.MaxVolume);
-                volumeSum += ((double)invent.CurrentVolume);
+                volumeMax += (double)invent.MaxVolume;
+                volumeSum += (double)invent.CurrentVolume;
 
                 List<MyInventoryItem> inventoryItem = new List<MyInventoryItem>();
                 invent.GetItems(inventoryItem);
@@ -1857,7 +1879,7 @@ namespace IngameScript10.TS
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)inventoryItem[j].Amount);
+                        components[key] += (double)inventoryItem[j].Amount;
                     }
                     else
                     {
@@ -1868,25 +1890,27 @@ namespace IngameScript10.TS
                             {
                                 others.Add(key, 0);
                             }
-                            others[key] += ((double)inventoryItem[j].Amount);
+                            others[key] += (double)inventoryItem[j].Amount;
                         }
                     }
                 }
             }
 
-            foreach (var i in prevCount)
+            foreach (KeyValuePair<string, double> i in prevCount)
             {
                 if (others.ContainsKey(i.Key))
                 {
                     if (!incomeTotal.ContainsKey(i.Key))
+                    {
                         incomeTotal.Add(i.Key, new AverageDouble());
+                    }
 
                     incomeTotal[i.Key].AddNext(others[i.Key] - i.Value);
                 }
             }
 
             prevCount = new Dictionary<string, double>();
-            foreach (var i in others)
+            foreach (KeyValuePair<string, double> i in others)
             {
                 prevCount.Add(i.Key, i.Value);
             }
@@ -1903,14 +1927,14 @@ namespace IngameScript10.TS
                     {
                         production.Add(key, 0);
                     }
-                    production[key] += ((int)item.Amount);
+                    production[key] += (int)item.Amount;
                 }
 
                 IMyInventory asmInvent = asm.OutputInventory;
                 List<MyInventoryItem> inventoryItems = new List<MyInventoryItem>();
                 asmInvent.GetItems(inventoryItems);
 
-                foreach (var item in inventoryItems)
+                foreach (MyInventoryItem item in inventoryItems)
                 {
                     if (item.Type.TypeId.Contains("Component"))
                     {
@@ -1919,11 +1943,11 @@ namespace IngameScript10.TS
                         {
                             components.Add(key, 0);
                         }
-                        components[key] += ((double)item.Amount);
+                        components[key] += (double)item.Amount;
 
                         IMyInventory inventTo = containersForCraft.FirstOrDefault(x =>
                         {
-                            return (x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume) > item.Amount;
+                            return x.GetInventory().MaxVolume - x.GetInventory().CurrentVolume > item.Amount;
                         })?.GetInventory();
                         asmInvent.TransferItemTo(inventTo, item);
 
@@ -1960,7 +1984,7 @@ namespace IngameScript10.TS
             double costApproximatly = 0;
 
             string strCargo = "Cargo absolute : \n" + ValueToString(volumeSum * 1000) + "l / " + ValueToString(volumeMax * 1000) + "l";
-            string strCargoPersent = "Cargo percent : \n" + ((volumeSum / volumeMax) * 100).ToString("0.0") + "%";
+            string strCargoPersent = "Cargo percent : \n" + (volumeSum / volumeMax * 100).ToString("0.0") + "%";
 
             string ComponentsString = "Components:\n";
             List<KeyValuePair<string, double>> compList = components.OrderBy(x => x.Key).ToList();
@@ -1983,7 +2007,6 @@ namespace IngameScript10.TS
             }
             string OresString = "";
             string IngotsString = "";
-
 
 
             foreach (KeyValuePair<string, double> item in others)
@@ -2033,20 +2056,24 @@ namespace IngameScript10.TS
             screens[8].Text = $"Cost all:\n{DoubleToStrMoney(Math.Round(costApproximatly))}$";
         }
 
-        enum TankType
+        private enum TankType
         {
             oxy,
             hydro,
             none
         }
-        TankType GetTankType(IMyTerminalBlock theBlock)
+        private TankType GetTankType(IMyTerminalBlock theBlock)
         {
             if (theBlock is IMyGasTank)
             {
                 if (theBlock.BlockDefinition.SubtypeId.Contains("Hydro"))
+                {
                     return TankType.hydro;
+                }
                 else
+                {
                     return TankType.oxy;
+                }
             }
             return TankType.none;
         }
@@ -2063,7 +2090,7 @@ namespace IngameScript10.TS
             return timeNow.TimeOfDay.Hours.ToString("00") + ":" + timeNow.TimeOfDay.Minutes.ToString("00") + ":" + timeNow.TimeOfDay.Seconds.ToString("00");
         }
 
-        string ValueToString(double count)
+        private string ValueToString(double count)
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -2083,7 +2110,7 @@ namespace IngameScript10.TS
             return count.ToString("0.0");
         }
 
-        string CountToString(double count, string roundto = "0.0")
+        private string CountToString(double count, string roundto = "0.0")
         {
             if (Math.Abs(count) >= 1000000000)
             {
@@ -2110,7 +2137,7 @@ namespace IngameScript10.TS
 
         private double Clamp(double x, double min, double max)
         {
-            return (x < min) ? min : ((x > max) ? max : x);
+            return x < min ? min : x > max ? max : x;
         }
 
         #region doors
@@ -2143,7 +2170,7 @@ namespace IngameScript10.TS
             }
         }
 
-        List<DoorExt> doors = new List<DoorExt>();
+        private List<DoorExt> doors = new List<DoorExt>();
 
         public void InitDoors()
         {
@@ -2154,25 +2181,26 @@ namespace IngameScript10.TS
 
         public void CloseDoors()
         {
-            foreach (var door in doors)
+            foreach (DoorExt door in doors)
             {
                 if (door.isClosed)
                 {
                     door.lastTimeOpen = TimeNow;
                 }
             }
-            foreach (var door in doors)
+            foreach (DoorExt door in doors)
             {
                 door.Close();
             }
         }
+
         #endregion
     }
 }
 
 namespace IngameScript10.RenderingTry
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         private class SCR
         {
@@ -2198,7 +2226,7 @@ namespace IngameScript10.RenderingTry
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 isInitWithPanel = false;
             }
@@ -2289,14 +2317,15 @@ namespace IngameScript10.RenderingTry
 
 
                 sDebug += "try hit...\nenable cast:" + camera.EnableRaycast + "\nrange:" + camera.AvailableScanRange + "\n";
+
                 // Выполняем raycast через IMyCameraBlock
-                var hitInfo = camera.Raycast(camera.AvailableScanRange);
+                MyDetectedEntityInfo hitInfo = camera.Raycast(camera.AvailableScanRange);
 
 
                 Vector3D? hit = hitInfo.HitPosition;
                 if (hit.HasValue)
                 {
-                    sDebug += ($"Hit: {hit.Value}");
+                    sDebug += $"Hit: {hit.Value}";
                 }
                 else
                 {
@@ -2305,7 +2334,7 @@ namespace IngameScript10.RenderingTry
             }
             else
             {
-                sDebug += ("Camera not found");
+                sDebug += "Camera not found";
             }
         }
     }
@@ -2313,14 +2342,14 @@ namespace IngameScript10.RenderingTry
 
 namespace IngameScript11.Drone1
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         #region SETTINGS
 
-        const double gyroMult = 4d;
-        const double gyroAmplificationValue = 0.35f;
-        const float angleDeflection = 5f;
-        const float thrustersWorkAngle = 45f;
+        private const double gyroMult = 4d;
+        private const double gyroAmplificationValue = 0.35f;
+        private const float angleDeflection = 5f;
+        private const float thrustersWorkAngle = 45f;
 
         #endregion
 
@@ -2354,7 +2383,7 @@ namespace IngameScript11.Drone1
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.FontColor = new Color(105, 255, 187);
                 isInitWithPanel = false;
@@ -2398,12 +2427,12 @@ namespace IngameScript11.Drone1
 
             public Gyro(IMyGyro gyro)
             {
-                this.gyroRef = gyro;
+                gyroRef = gyro;
             }
 
             public Gyro(IMyGyro gyro, IMyShipController control)
             {
-                this.gyroRef = gyro;
+                gyroRef = gyro;
                 ctrl = control;
             }
 
@@ -2447,23 +2476,24 @@ namespace IngameScript11.Drone1
             }
         }
 
-        SCR scr;
+        private SCR scr;
+
         //SCR scrD;
 
-        List<IMyThrust> thrusters = new List<IMyThrust>();
-        List<Gyro> gyros = new List<Gyro>();
-        IMyShipController controller;
+        private List<IMyThrust> thrusters = new List<IMyThrust>();
+        private List<Gyro> gyros = new List<Gyro>();
+        private IMyShipController controller;
         private const string RID = "ACTAG_1"; //ACTAG - automatic controllable thrusters and gyroscopes
 
-        double Speed => velocity.Length();
-        Vector3D velocity => controller.GetShipVelocities().LinearVelocity;
+        private double Speed => velocity.Length();
+        private Vector3D velocity => controller.GetShipVelocities().LinearVelocity;
 
-        Vector3D Pos => controller.GetPosition();
-        Vector3D Forward => controller.WorldMatrix.GetOrientation().Forward;
-        Vector3 Rotation => ConvertToEuler();
+        private Vector3D Pos => controller.GetPosition();
+        private Vector3D Forward => controller.WorldMatrix.GetOrientation().Forward;
+        private Vector3 Rotation => ConvertToEuler();
 
-        string SpeedStr => Speed.ToString("0.000");
-        string PosStr => V2S(Pos);
+        private string SpeedStr => Speed.ToString("0.000");
+        private string PosStr => V2S(Pos);
 
         public Program()
         {
@@ -2471,7 +2501,8 @@ namespace IngameScript11.Drone1
 
             controller = GridTerminalSystem.GetBlockWithName("ACTAG_1_control") as IMyShipController;
 
-            scr = new SCR(this.Me.GetSurface(0), 0);
+            scr = new SCR(Me.GetSurface(0), 0);
+
             //scrD = new SCR(GridTerminalSystem, "dispD");
 
             GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusters);
@@ -2484,18 +2515,18 @@ namespace IngameScript11.Drone1
             gyros = gyrosTemp.Select(x => new Gyro(x)).ToList();
         }
 
-        Random rnd = new Random(DateTime.Now.Millisecond);
-        DateTime prevTime = DateTime.Now;
+        private Random rnd = new Random(DateTime.Now.Millisecond);
+        private DateTime prevTime = DateTime.Now;
 
-        bool isTargeting = false;
-        Vector3 targetPos = new Vector3(0, 0, 0);
+        private bool isTargeting = false;
+        private Vector3 targetPos = new Vector3(0, 0, 0);
 
-        double targetDistance => (targetPos - Pos).Length();
-        Vector3 targetForward => (targetPos - Pos).Normalized();
-        double targetAngleDegrees => MathHelper.ToDegrees(targetAngleRadians);
-        double targetAngleRadians => SignedAngle(Forward, targetForward, controller.WorldMatrix.Up);
+        private double targetDistance => (targetPos - Pos).Length();
+        private Vector3 targetForward => (targetPos - Pos).Normalized();
+        private double targetAngleDegrees => MathHelper.ToDegrees(targetAngleRadians);
+        private double targetAngleRadians => SignedAngle(Forward, targetForward, controller.WorldMatrix.Up);
 
-        float EngineVelocity
+        private float EngineVelocity
         {
             get
             {
@@ -2510,9 +2541,9 @@ namespace IngameScript11.Drone1
             }
         }
 
-        string sDebugOut = "";
+        private string sDebugOut = "";
 
-        bool isStopped = false;
+        private bool isStopped = false;
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -2536,6 +2567,7 @@ namespace IngameScript11.Drone1
             double deltaTime = (DateTime.Now - prevTime).TotalSeconds;
             Update(deltaTime);
             scr.Text = sDebugOut;
+
             //scrD.Text = sDebugOut;
         }
 
@@ -2543,7 +2575,7 @@ namespace IngameScript11.Drone1
         {
             EngineVelocity = 0;
             GyrosVelosity = new Vector3(0, 0, 0);
-            foreach (var x in gyros)
+            foreach (Gyro x in gyros)
             {
                 x.gyroRef.GyroOverride = false;
             }
@@ -2554,7 +2586,7 @@ namespace IngameScript11.Drone1
         {
             EngineVelocity = 0;
             GyrosVelosity = new Vector3(0, 0, 0);
-            foreach (var x in gyros)
+            foreach (Gyro x in gyros)
             {
                 x.gyroRef.GyroOverride = true;
             }
@@ -2617,16 +2649,17 @@ namespace IngameScript11.Drone1
             Vector3D left = controller.WorldMatrix.Left;
 
             Vector3D lTemp = Vector3D.Reject(t, up).Normalized();
-            double yaw = Math.Acos(Vector3D.Dot(left, lTemp)) - (Math.PI / 2);
-            yaw = Math.Acos(Vector3D.Dot(lTemp, fow)) > (Math.PI / 2) ? (Math.PI - Math.Abs(yaw)) * Math.Sign(yaw) : yaw;
+            double yaw = Math.Acos(Vector3D.Dot(left, lTemp)) - Math.PI / 2;
+            yaw = Math.Acos(Vector3D.Dot(lTemp, fow)) > Math.PI / 2 ? (Math.PI - Math.Abs(yaw)) * Math.Sign(yaw) : yaw;
             yaw = Math.Pow(Math.Abs(yaw), gyroAmplificationValue) * Math.Sign(yaw);
 
             Vector3D uTemp = Vector3D.Reject(t, left).Normalized();
-            double pitch = Math.Acos(Vector3D.Dot(up, uTemp)) - (Math.PI / 2);
-            pitch = Math.Acos(Vector3D.Dot(uTemp, fow)) > (Math.PI / 2) ? (Math.PI - Math.Abs(pitch)) * Math.Sign(pitch) : pitch;
+            double pitch = Math.Acos(Vector3D.Dot(up, uTemp)) - Math.PI / 2;
+            pitch = Math.Acos(Vector3D.Dot(uTemp, fow)) > Math.PI / 2 ? (Math.PI - Math.Abs(pitch)) * Math.Sign(pitch) : pitch;
             pitch = Math.Pow(Math.Abs(pitch), gyroAmplificationValue) * Math.Sign(pitch);
 
             #region old
+
             //Vector3D vrej = Vector3D.Reject(velocity.Normalized(), t);
             //Vector3D correction = (t - vrej * 2).Normalized();
 
@@ -2634,6 +2667,7 @@ namespace IngameScript11.Drone1
             //pitch = Math.Acos(pitch) - Math.PI / 2;
             //double yaw = Vector3D.Dot(Gleft, (Vector3D.Reject(correction, Gup)).Normalized());
             //yaw = Math.Acos(yaw) - Math.PI / 2;
+
             #endregion
             return new Vector3D(yaw, -pitch, 0);
         }
@@ -2669,7 +2703,7 @@ namespace IngameScript11.Drone1
                 Vector3D direction = camera.WorldMatrix.Forward;
                 Vector3D start = camera.GetPosition();
                 camera.EnableRaycast = true;
-                var hitInfo = camera.Raycast(camera.AvailableScanRange);
+                MyDetectedEntityInfo hitInfo = camera.Raycast(camera.AvailableScanRange);
 
                 Vector3D? hit = hitInfo.HitPosition;
                 if (hit.HasValue)
@@ -2693,7 +2727,7 @@ namespace IngameScript11.Drone1
             }
             set
             {
-                foreach (var gyro in gyros)
+                foreach (Gyro gyro in gyros)
                 {
                     gyro.Velosity = value;
                 }
@@ -2707,11 +2741,11 @@ namespace IngameScript11.Drone1
 
         public Vector3 S2V(string str)
         {
-            var parts = str.Split(',');
-            var vectorValues = new Dictionary<string, float>();
-            foreach (var part in parts)
+            string[] parts = str.Split(',');
+            Dictionary<string, float> vectorValues = new Dictionary<string, float>();
+            foreach (string part in parts)
             {
-                var keyValue = part.Split(':');
+                string[] keyValue = part.Split(':');
                 if (keyValue.Length == 2)
                 {
                     string key = keyValue[0].Trim();
@@ -2736,11 +2770,11 @@ namespace IngameScript11.Drone1
 
 namespace IngameScript.Radar
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         #region SETTINGS
 
-        const string cameraName = "radCam";
+        private const string cameraName = "radCam";
 
         #endregion
 
@@ -2774,7 +2808,7 @@ namespace IngameScript.Radar
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.FontColor = new Color(105, 255, 187);
                 isInitWithPanel = false;
@@ -2827,10 +2861,7 @@ namespace IngameScript.Radar
                 val = values.ToArray();
             }
 
-            public T this[int i]
-            {
-                get { return val[i]; }
-            }
+            public T this[int i] => val[i];
 
             public T Next()
             {
@@ -2857,27 +2888,27 @@ namespace IngameScript.Radar
             {
                 command1,
                 command2,
-                command3,
+                command3
             }
 
             public Dictionary<string, CmdList> commands = new Dictionary<string, CmdList>()
             {
-                { "command1", CmdList.command1},
-                { "command2", CmdList.command2},
-                { "command3", CmdList.command3},
+                { "command1", CmdList.command1 },
+                { "command2", CmdList.command2 },
+                { "command3", CmdList.command3 }
             };
         }
 
 
 
-        SCR scrOut;
-        SCR scrIn;
-        Cycled<IMyCameraBlock> cams;
+        private SCR scrOut;
+        private SCR scrIn;
+        private Cycled<IMyCameraBlock> cams;
 
         public Program()
         {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
-            scrOut = new SCR(this.Me.GetSurface(0), 0);
+            scrOut = new SCR(Me.GetSurface(0), 0);
 
             List<IMyCameraBlock> camsTemp = new List<IMyCameraBlock>();
             GridTerminalSystem.GetBlocksOfType<IMyCameraBlock>(camsTemp);
@@ -2890,7 +2921,9 @@ namespace IngameScript.Radar
         {
 
             if (string.IsNullOrEmpty(argument))
+            {
                 return;
+            }
 
             string[] commands = argument.Split(',');
 
@@ -2908,11 +2941,11 @@ namespace IngameScript.Radar
 namespace IngameScript.Menu
 {
 
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         #region SETTINGS
 
-        const string cameraName = "radCam";
+        private const string cameraName = "radCam";
 
         #endregion
         private class SCR
@@ -2945,7 +2978,7 @@ namespace IngameScript.Menu
 
             public SCR(IMyCockpit cockpit, int index)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.FontColor = new Color(105, 255, 187);
                 isInitWithPanel = false;
@@ -2988,11 +3021,11 @@ namespace IngameScript.Menu
 
 namespace IngameScript.Spot
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         #region SETTINGS
 
-        const string shipName = "spot";
+        private const string shipName = "spot";
 
         #endregion
 
@@ -3030,7 +3063,7 @@ namespace IngameScript.Spot
 
             public SCR(IMyCockpit cockpit, int index, ContentType content = ContentType.TEXT_AND_IMAGE)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.ContentType = content;
                 surface.FontColor = favoriteColor;
@@ -3098,12 +3131,12 @@ namespace IngameScript.Spot
         private double filledHypdroPrev = 0;
         private double filledOxyPrev = 0;
 
-        IMyCameraBlock camera;
+        private IMyCameraBlock camera;
 
-        Color yellow = new Color(255, 156, 2);
-        Color green = new Color(105, 255, 187);
+        private Color yellow = new Color(255, 156, 2);
+        private Color green = new Color(105, 255, 187);
 
-        int counter = 0;
+        private int counter = 0;
 
         public Program()
         {
@@ -3123,7 +3156,7 @@ namespace IngameScript.Spot
         {
             double filledHydro = tanks.Where(x => x.BlockDefinition.SubtypeId.Contains("Hydro")).Average(x => x.FilledRatio);
             double filledOxy = tanks.Where(x => !x.BlockDefinition.SubtypeId.Contains("Hydro")).Average(x => x.FilledRatio);
-            mainText = $"Hydro:{(filledHydro * 100):0.00}%\nH[{((filledHydro - filledHypdroPrev) * 100):0.0000}]\nOxy:{(filledOxy * 100):0.00}%";
+            mainText = $"Hydro:{filledHydro * 100:0.00}%\nH[{(filledHydro - filledHypdroPrev) * 100:0.0000}]\nOxy:{filledOxy * 100:0.00}%";
 
             filledHypdroPrev = filledHydro;
             filledOxyPrev = filledOxy;
@@ -3133,7 +3166,7 @@ namespace IngameScript.Spot
             double scanRange;
             if (TRaycastForward(camera, out hitInfo, out scanRange))
             {
-                addScr.Text = $"{(Vector3.Distance(Me.GetPosition(), hitInfo.HitPosition.Value)):0.0}m\n{hitInfo.Type}";
+                addScr.Text = $"{Vector3.Distance(Me.GetPosition(), hitInfo.HitPosition.Value):0.0}m\n{hitInfo.Type}";
                 addScr.Color = yellow;
             }
             else
@@ -3142,7 +3175,7 @@ namespace IngameScript.Spot
                 addScr.Color = green;
             }
 
-            addScr2.Text = (counter).ToString();
+            addScr2.Text = counter.ToString();
             counter = ++counter % 10;
         }
 
@@ -3158,11 +3191,11 @@ namespace IngameScript.Spot
 
 namespace IngameScript.Lift
 {
-    partial class Program : MyGridProgram
+    internal partial class Program : MyGridProgram
     {
         #region SETTINGS
 
-        const string shipName = "lift";
+        private const string shipName = "lift";
 
         #endregion
 
@@ -3200,7 +3233,7 @@ namespace IngameScript.Lift
 
             public SCR(IMyCockpit cockpit, int index, ContentType content = ContentType.TEXT_AND_IMAGE)
             {
-                this.name = index.ToString();
+                name = index.ToString();
                 surface = cockpit.GetSurface(index);
                 surface.ContentType = content;
                 surface.FontColor = favoriteColor;
@@ -3262,10 +3295,10 @@ namespace IngameScript.Lift
 
         private string mainText = "";
 
-        Color yellow = new Color(255, 156, 2);
-        Color green = new Color(105, 255, 187);
+        private Color yellow = new Color(255, 156, 2);
+        private Color green = new Color(105, 255, 187);
 
-        List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
+        private List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
 
         public Program()
         {
@@ -3276,7 +3309,7 @@ namespace IngameScript.Lift
             wheels.RemoveAll(x => !x.CustomName.Contains(shipName));
         }
 
-        float propulsion = 0;
+        private float propulsion = 0;
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -3284,7 +3317,7 @@ namespace IngameScript.Lift
             {
                 propulsion += 0.1f;
                 propulsion = MathHelper.Clamp(propulsion, -1, 1);
-                foreach (var wheel in wheels)
+                foreach (IMyMotorSuspension wheel in wheels)
                 {
                     wheel.PropulsionOverride = propulsion;
                 }
@@ -3293,7 +3326,7 @@ namespace IngameScript.Lift
             {
                 propulsion -= 0.1f;
                 propulsion = MathHelper.Clamp(propulsion, -1, 1);
-                foreach (var wheel in wheels)
+                foreach (IMyMotorSuspension wheel in wheels)
                 {
                     wheel.PropulsionOverride = propulsion;
                 }
