@@ -26,25 +26,25 @@ namespace RefineryManager
 
         private Dictionary<string, int> componentsMinimum = new Dictionary<string, int>()
         {
-            { "BulletproofGlass", 300 }, //бронестекло
-            { "ComputerComponent", 1000 }, //компьютер
-            { "ConstructionComponent", 1000 }, //строительный компонент
-            { "DetectorComponent", 0 }, //компоненты детектора руды
-            { "Display", 200 }, //экран
+            { "BulletproofGlass", 500 }, //бронестекло
+            { "ComputerComponent", 3000 }, //компьютер
+            { "ConstructionComponent", 5000 }, //строительный компонент
+            { "DetectorComponent", 100 }, //компоненты детектора руды
+            { "Display", 500 }, //экран
             { "ExplosivesComponent", 0 }, //взрывчатка
-            { "GirderComponent", 500 }, //балки
+            { "GirderComponent", 2000 }, //балки
             { "GravityGeneratorComponent", 0 }, //компоненты грави-генератора
-            { "InteriorPlate", 1000 }, //внутренняя пластина
-            { "LargeTube", 200 }, //большая труба
+            { "InteriorPlate", 5000 }, //внутренняя пластина
+            { "LargeTube", 1000 }, //большая труба
             { "MedicalComponent", 0 }, //медицинские компоненты
-            { "MetalGrid", 500 }, //решетка
-            { "MotorComponent", 200 }, //мотор
-            { "PowerCell", 200 }, //батарея
-            { "RadioCommunicationComponent", 0 }, //радио-компоненты
+            { "MetalGrid", 2000 }, //решетка
+            { "MotorComponent", 2000 }, //мотор
+            { "PowerCell", 2000 }, //батарея
+            { "RadioCommunicationComponent", 500 }, //радио-компоненты
             { "ReactorComponent", 0 }, //реакторные компоненты
-            { "SmallTube", 500 }, //малая труба
-            { "SolarCell", 200 }, //солненые ячейки
-            { "SteelPlate", 2000 }, //стальная пластина
+            { "SmallTube", 5000 }, //малая труба
+            { "SolarCell", 2000 }, //солненые ячейки
+            { "SteelPlate", 20000 }, //стальная пластина
             { "Superconductor", 0 }, //сверхпроводник
             { "ThrustComponent", 0 } //ионный ускоритель
         };
@@ -114,9 +114,9 @@ namespace RefineryManager
             InitBlocks(assemblers);
         }
 
-        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock
+        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
         {
-            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.Name.Contains("scrIgnore"));
+            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
         }
 
         private Dictionary<string, double> components = new Dictionary<string, double>();

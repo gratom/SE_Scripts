@@ -59,6 +59,8 @@
         <Compile Include="oldScripts\Program.cs"/>
         <Compile Include="oldScripts\Program2.cs"/>
         <Compile Include="oldScripts\Program3.cs"/>
+        <Compile Include="Transport\DrillBatteries.cs" />
+        <Compile Include="Transport\MiniDrill.cs" />
     </ItemGroup>
     <ItemGroup>
         <Folder Include="basicsSurvive\" />

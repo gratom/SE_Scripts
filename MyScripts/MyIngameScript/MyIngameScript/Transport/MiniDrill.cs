@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace Batteries
+namespace MiniDrill
 {
     internal partial class Program : MyGridProgram
     {
@@ -33,7 +33,7 @@ namespace Batteries
 
         private DateTime lastRecompileTime = DateTime.Now;
 
-        private const int skipUpdateCount = 5;
+        private const int SKIP_UPDATE_COUNT = 10;
         private int updateCounter = 0;
         private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
         private int UpdateCounter
@@ -44,7 +44,7 @@ namespace Batteries
             }
             set
             {
-                updateCounter = value % skipUpdateCount;
+                updateCounter = value % SKIP_UPDATE_COUNT;
             }
         }
 
@@ -75,22 +75,32 @@ namespace Batteries
             GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
         }
 
+        public void InitBlock<T>(out T outBlock) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        {
+            List<T> temp = new List<T>();
+            GridTerminalSystem.GetBlocksOfType<T>(temp, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            outBlock = temp.FirstOrDefault();
+        }
+
         #endregion
 
-        private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
-
-        private const string SCREEN_BATTERIES = "batteriesSCR";
-        private SCR scr;
-
-        private const string SCREEN_BATTERIES_Q = "bquick";
-        private SCR scrq;
+        private IMyCockpit cockpit;
+        private List<SCR> scr;
+        private SCR cargoDrill;
+        private List<IMyCargoContainer> containers = new List<IMyCargoContainer>();
+        private List<IMyMotorStator> hinges = new List<IMyMotorStator>();
 
         private void AdditionInits()
         {
 //INIT HERE---------
-            scr = new SCR(GridTerminalSystem, SCREEN_BATTERIES, true, 0.7f);
-            scrq = new SCR(GridTerminalSystem, SCREEN_BATTERIES_Q, true, 4.2f);
-            InitBlocks(batteries);
+
+            InitBlock(out cockpit);
+            scr = SCR.GetAll(cockpit, false);
+            scr[0].SetAsTXT(4f);
+            scr[1].SetAsTXT(3f);
+            cargoDrill = new SCR(GridTerminalSystem, "cargoDrill", true, 4);
+            InitBlocks(containers);
+            InitBlocks(hinges);
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -101,6 +111,7 @@ namespace Batteries
             {
                 REinit();
             }
+            ProcessHinge(argument);
 
             DateTime t = TimeNow;
             thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
@@ -114,61 +125,66 @@ namespace Batteries
             #endregion
 
 //CODE HERE----------------
-            BatteriesInfo();
+
+            ProcessContainers();
 
 //CODE END-----------------
             PrevTime = TimeNow;
         }
 
-        public void BatteriesInfo()
+        private string rotState = "rot ";
+
+        private void ProcessHinge(string command)
         {
-            double Sum = 0;
-            double Max = 0;
-            double EnPlus = 0;
-            double EnMinus = 0;
+            scr[1].SetText($"{rotState}\n{hinges[0].Angle * 57.29f:0.0}");
 
-            for (int i = 0; i < batteries.Count; i++)
+            if (string.IsNullOrEmpty(command))
             {
-                if (batteries[i] != null)
-                {
-                    Max += batteries[i].MaxStoredPower;
-                    Sum += batteries[i].CurrentStoredPower;
-                    EnPlus += batteries[i].CurrentInput;
-                    EnMinus += batteries[i].CurrentOutput;
-                }
+                return;
             }
 
-            string strVolume = "Energy : " + ValueToString(Sum * 1000000) + "wh / " + ValueToString(Max * 1000000) + "wh";
-            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
-            string InOut = "in : +" + ValueToString(EnPlus * 1000000) + "w" +
-                           "\nout : -" + ValueToString(EnMinus * 1000000) + "w" +
-                           "\ntotal : " + ValueToString((EnPlus - EnMinus) * 1000000) + "w";
-            double time = (Max - Sum) / (EnPlus - EnMinus);
-
-            long timeTicks = (long)(time * 3600 * 10000000);
-            TimeSpan timeSpan = new TimeSpan(timeTicks);
-
-            if (Sum / Max * 100 < 99)
+            float rot = 0;
+            switch (command)
             {
-                if (time > 0)
-                {
-                    InOut += $"\ntime to charge : {timeSpan:dd\\.hh\\:mm\\:ss}";
-                }
-                else
-                {
-                    double timeToDiscarge = Sum / (EnPlus - EnMinus);
-                    long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
-                    TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicksToDiscarge);
-                    InOut += $"\ntime to discharge : {timeSpanToDiscarge:dd\\.hh\\:mm\\:ss}";
-                }
-            }
-            else
-            {
-                InOut += "\nBatteries charged";
+                case "up":
+                    rot = 1;
+                    rotState = "rot up";
+                    break;
+                case "down":
+                    rot = -1;
+                    rotState = "rot down";
+                    break;
             }
 
-            scr?.SetText($"{strVolume}\n{strVolumePersent}\n{InOut}\n");
-            scrq?.SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}");
+            if (rot == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < hinges.Count; i++)
+            {
+                IMyMotorStator h = hinges[i];
+                h.TargetVelocityRPM = rot;
+            }
+        }
+
+        private void ProcessContainers()
+        {
+            float currentVolume = 0;
+            float maxVolume = 0;
+
+            for (int i = 0; i < containers.Count; i++)
+            {
+                IMyCargoContainer cont = containers[i];
+                IMyInventory inv = cont.GetInventory();
+                maxVolume += (float)inv.MaxVolume;
+                currentVolume += (float)inv.CurrentVolume;
+            }
+
+            string str = $"{currentVolume / maxVolume * 100:0.0}%";
+
+            scr[0].SetText(str);
+            cargoDrill.SetText("\n\n\n" + str);
         }
 
         #region SCR

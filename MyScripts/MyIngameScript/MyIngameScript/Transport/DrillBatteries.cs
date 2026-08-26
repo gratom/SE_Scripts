@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace Batteries
+namespace DrillBatteries
 {
     internal partial class Program : MyGridProgram
     {
@@ -75,26 +75,54 @@ namespace Batteries
             GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
         }
 
+        public void InitBlock<T>(out T outBlock) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        {
+            List<T> temp = new List<T>();
+            GridTerminalSystem.GetBlocksOfType<T>(temp, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            outBlock = temp.FirstOrDefault();
+        }
+
         #endregion
 
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
-        private const string SCREEN_BATTERIES = "batteriesSCR";
-        private SCR scr;
+        private IMyCockpit cockpit;
+        private List<SCR> scr;
 
-        private const string SCREEN_BATTERIES_Q = "bquick";
-        private SCR scrq;
+        private IMyShipConnector connector;
 
         private void AdditionInits()
         {
 //INIT HERE---------
-            scr = new SCR(GridTerminalSystem, SCREEN_BATTERIES, true, 0.7f);
-            scrq = new SCR(GridTerminalSystem, SCREEN_BATTERIES_Q, true, 4.2f);
+            InitBlock(out cockpit);
+            InitBlock(out connector);
+            scr = SCR.GetAll(cockpit, false);
+            scr[2].SetAsTXT(2f);
+            scr[3].SetAsTXT(2f);
             InitBlocks(batteries);
         }
 
+        private bool connectorState = false;
+
         public void Main(string argument, UpdateType updateSource)
         {
+            if (connector.IsConnected)
+            {
+                if (!connectorState)
+                {
+                    BatteriesControl("charge");
+                    connectorState = true;
+                }
+            }
+            else
+            {
+                if (connectorState)
+                {
+                    BatteriesControl("auto");
+                    connectorState = false;
+                }
+            }
+
             #region basics
 
             if (argument == "RE")
@@ -120,6 +148,28 @@ namespace Batteries
             PrevTime = TimeNow;
         }
 
+        private void BatteriesControl(string command)
+        {
+            if (string.IsNullOrEmpty(command))
+            {
+                return;
+            }
+            if (command == "charge")
+            {
+                for (int i = 0; i < batteries.Count; i++)
+                {
+                    batteries[i].ChargeMode = ChargeMode.Recharge;
+                }
+            }
+            else if (command == "auto")
+            {
+                for (int i = 0; i < batteries.Count; i++)
+                {
+                    batteries[i].ChargeMode = ChargeMode.Auto;
+                }
+            }
+        }
+
         public void BatteriesInfo()
         {
             double Sum = 0;
@@ -138,11 +188,13 @@ namespace Batteries
                 }
             }
 
-            string strVolume = "Energy : " + ValueToString(Sum * 1000000) + "wh / " + ValueToString(Max * 1000000) + "wh";
-            string strVolumePersent = "Energy percent : " + (Sum / Max * 100).ToString("0.0") + "%";
-            string InOut = "in : +" + ValueToString(EnPlus * 1000000) + "w" +
-                           "\nout : -" + ValueToString(EnMinus * 1000000) + "w" +
-                           "\ntotal : " + ValueToString((EnPlus - EnMinus) * 1000000) + "w";
+            //string strVolume = "Energy : " + ValueToString(Sum * 1000000) + "wh / " + ValueToString(Max * 1000000) + "wh";
+            string strVolumePersent = "ENERGY:" + (Sum / Max * 100).ToString("0.0") + "%";
+            string InOut = "";
+
+            //"in : +" + ValueToString(EnPlus * 1000000) + "w" +
+            //               "\nout : -" + ValueToString(EnMinus * 1000000) + "w" +
+            //               "\ntotal : " + ValueToString((EnPlus - EnMinus) * 1000000) + "w";
             double time = (Max - Sum) / (EnPlus - EnMinus);
 
             long timeTicks = (long)(time * 3600 * 10000000);
@@ -152,23 +204,23 @@ namespace Batteries
             {
                 if (time > 0)
                 {
-                    InOut += $"\ntime to charge : {timeSpan:dd\\.hh\\:mm\\:ss}";
+                    InOut += $"{timeSpan:dd\\.hh\\:mm\\:ss}";
                 }
                 else
                 {
                     double timeToDiscarge = Sum / (EnPlus - EnMinus);
                     long timeTicksToDiscarge = (long)(timeToDiscarge * 3600 * 10000000);
                     TimeSpan timeSpanToDiscarge = new TimeSpan(timeTicksToDiscarge);
-                    InOut += $"\ntime to discharge : {timeSpanToDiscarge:dd\\.hh\\:mm\\:ss}";
+                    InOut += $"{timeSpanToDiscarge:dd\\.hh\\:mm\\:ss}";
                 }
             }
             else
             {
-                InOut += "\nBatteries charged";
+                InOut += "full";
             }
 
-            scr?.SetText($"{strVolume}\n{strVolumePersent}\n{InOut}\n");
-            scrq?.SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}");
+            scr[2].SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}\n{InOut}");
+            scr[3].SetText($"{(connectorState ? "connected" : "disconnected")}");
         }
 
         #region SCR

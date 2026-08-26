@@ -70,6 +70,18 @@ namespace BasicClass
             thisScreens = SCR.GetAll(Me, true, 1.6f);
         }
 
+        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        {
+            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+        }
+
+        public void InitBlock<T>(out T outBlock) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        {
+            List<T> temp = new List<T>();
+            GridTerminalSystem.GetBlocksOfType<T>(temp, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            outBlock = temp.FirstOrDefault();
+        }
+
         #endregion
 
         private void AdditionInits()
