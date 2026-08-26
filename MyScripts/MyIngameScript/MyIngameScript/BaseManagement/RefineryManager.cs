@@ -100,6 +100,8 @@ namespace RefineryManager
                 screens[key] = new SCR(GridTerminalSystem, key);
             }
             screens[COMPONENTS_SCREEN]?.SetAsTXT(0.67f);
+            screens[ORE_SCREEN]?.SetAsTXT(0.9f);
+            screens[INGOT_SCREEN]?.SetAsTXT(0.9f);
         }
 
         private void REinit()
@@ -122,8 +124,9 @@ namespace RefineryManager
         private Dictionary<string, double> production = new Dictionary<string, double>();
         private Dictionary<string, double> prevCount = new Dictionary<string, double>();
 
-        private const int skipUpdateCount = 5;
+        private const int skipUpdateCount = 10;
         private int updateCounter = 0;
+        private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
         private int UpdateCounter
         {
             get
@@ -144,7 +147,7 @@ namespace RefineryManager
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n\n\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             UpdateCounter++;
             if (updateCounter != 0)
@@ -318,7 +321,7 @@ namespace RefineryManager
                     {
                         ingotsString += CountToString(item.Value);
                     }
-                    ingotsString += "\n\n";
+                    ingotsString += "\n";
                 }
             }
 

@@ -33,8 +33,9 @@ namespace BasicClass
 
         private DateTime lastRecompileTime = DateTime.Now;
 
-        private const int skipUpdateCount = 30;
+        private const int SKIP_UPDATE_COUNT = 30;
         private int updateCounter = 0;
+        private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
         private int UpdateCounter
         {
             get
@@ -43,7 +44,7 @@ namespace BasicClass
             }
             set
             {
-                updateCounter = value % skipUpdateCount;
+                updateCounter = value % SKIP_UPDATE_COUNT;
             }
         }
 
@@ -87,7 +88,7 @@ namespace BasicClass
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n\n\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             UpdateCounter++;
             if (updateCounter != 0)
