@@ -89,6 +89,7 @@ namespace MiniDrill
         private SCR cargoDrill;
         private List<IMyCargoContainer> containers = new List<IMyCargoContainer>();
         private List<IMyMotorStator> hinges = new List<IMyMotorStator>();
+        private List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
 
         private void AdditionInits()
         {
@@ -97,14 +98,17 @@ namespace MiniDrill
             InitBlock(out cockpit);
             scr = SCR.GetAll(cockpit, false);
             scr[0].SetAsTXT(4f);
-            scr[1].SetAsTXT(3f);
+            scr[1].SetAsTXT(2f);
             cargoDrill = new SCR(GridTerminalSystem, "cargoDrill", true, 4);
             InitBlocks(containers);
             InitBlocks(hinges);
+            InitBlocks(wheels);
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
+            scr[1].SetText($"{rotState}\n{hinges[0].Angle * 57.29f:0.0}\nspeed:{speed}");
+
             #region basics
 
             if (argument == "RE")
@@ -112,6 +116,7 @@ namespace MiniDrill
                 REinit();
             }
             ProcessHinge(argument);
+            ProcessWheels(argument);
 
             DateTime t = TimeNow;
             thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
@@ -125,18 +130,53 @@ namespace MiniDrill
             #endregion
 
 //CODE HERE----------------
-
             ProcessContainers();
 
 //CODE END-----------------
             PrevTime = TimeNow;
         }
 
+        private float speed = 0;
+        private const float FAST = 50;
+        private const float SLOW = 13;
+
+        private void ProcessWheels(string command)
+        {
+            if (string.IsNullOrEmpty(command))
+            {
+                return;
+            }
+
+            float speedLimit = 0;
+            switch (command)
+            {
+                case "fast":
+                    speedLimit = FAST;
+                    speed = FAST;
+                    break;
+                case "slow":
+                    speedLimit = SLOW;
+                    speed = SLOW;
+                    break;
+            }
+
+            if (speedLimit == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < wheels.Count; i++)
+            {
+                
+                wheels[i].SetValue<float>("Speed Limit", speedLimit);
+            }
+        }
+
         private string rotState = "rot ";
 
         private void ProcessHinge(string command)
         {
-            scr[1].SetText($"{rotState}\n{hinges[0].Angle * 57.29f:0.0}");
+
 
             if (string.IsNullOrEmpty(command))
             {
