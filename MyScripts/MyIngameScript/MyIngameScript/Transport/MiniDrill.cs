@@ -103,6 +103,7 @@ namespace MiniDrill
             InitBlocks(containers);
             InitBlocks(hinges);
             InitBlocks(wheels);
+            speed = wheels[0].GetValue<float>("Speed Limit");
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -167,7 +168,7 @@ namespace MiniDrill
 
             for (int i = 0; i < wheels.Count; i++)
             {
-                
+
                 wheels[i].SetValue<float>("Speed Limit", speedLimit);
             }
         }
