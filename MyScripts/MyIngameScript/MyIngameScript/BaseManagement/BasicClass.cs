@@ -33,20 +33,9 @@ namespace BasicClass
 
         private DateTime lastRecompileTime = DateTime.Now;
 
-        private const int SKIP_UPDATE_COUNT = 30;
-        private int updateCounter = 0;
+        private const int SKIP_UPDATE_COUNT = 10;
         private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
-        private int UpdateCounter
-        {
-            get
-            {
-                return updateCounter;
-            }
-            set
-            {
-                updateCounter = value % SKIP_UPDATE_COUNT;
-            }
-        }
+        private SkipCounter UpdateCounter = new SkipCounter(SKIP_UPDATE_COUNT);
 
         private IMyCubeGrid grid;
         private List<SCR> thisScreens;
@@ -100,10 +89,9 @@ namespace BasicClass
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
-            UpdateCounter++;
-            if (updateCounter != 0)
+            if (!UpdateCounter.Next())
             {
                 return;
             }
@@ -292,6 +280,97 @@ namespace BasicClass
             }
 
             return count.ToString(roundto);
+        }
+
+        #endregion
+
+        #region wheels
+
+        public class Wheel
+        {
+            public Wheel(IMyMotorSuspension suspension)
+            {
+                motor = suspension;
+            }
+
+            public IMyMotorSuspension motor;
+
+            private const string SPEED_LIMIT_STRING = "Speed Limit";
+            public float SpeedLimit
+            {
+                get
+                {
+                    return motor.GetValue<float>(SPEED_LIMIT_STRING);
+                }
+                set
+                {
+                    motor.SetValue<float>(SPEED_LIMIT_STRING, value);
+                }
+            }
+
+            public static List<Wheel> FromSus(List<IMyMotorSuspension> suspList)
+            {
+                List<Wheel> ret = new List<Wheel>(suspList.Count);
+                for (int i = 0; i < suspList.Count; i++)
+                {
+                    ret.Add(new Wheel(suspList[i]));
+                }
+                return ret;
+            }
+
+        }
+
+        #endregion
+
+        #region counter
+
+        public class SkipCounter
+        {
+            private readonly int _targetCount;
+            private int _currentCount;
+
+            public event Action<SkipCounter> Triggered;
+
+            public bool Is => _currentCount == _targetCount;
+
+            public int Current => _currentCount;
+
+            public int Target => _targetCount;
+
+            public SkipCounter(int targetCount = 10)
+            {
+                if (targetCount <= 0)
+                {
+                    targetCount = 10;
+                }
+
+                _targetCount = targetCount;
+                _currentCount = 0;
+            }
+
+            public bool Next()
+            {
+                _currentCount++;
+
+                if (_currentCount >= _targetCount)
+                {
+                    _currentCount = 0;
+                    Triggered?.Invoke(this);
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _currentCount = 0;
+            }
+
+            public static implicit operator bool(SkipCounter counter)
+            {
+                return counter.Is;
+            }
         }
 
         #endregion

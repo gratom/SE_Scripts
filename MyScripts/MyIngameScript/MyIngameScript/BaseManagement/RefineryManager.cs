@@ -124,20 +124,9 @@ namespace RefineryManager
         private Dictionary<string, double> production = new Dictionary<string, double>();
         private Dictionary<string, double> prevCount = new Dictionary<string, double>();
 
-        private const int skipUpdateCount = 10;
-        private int updateCounter = 0;
+        private const int SKIP_UPDATE_COUNT = 10;
         private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
-        private int UpdateCounter
-        {
-            get
-            {
-                return updateCounter;
-            }
-            set
-            {
-                updateCounter = value % skipUpdateCount;
-            }
-        }
+        private SkipCounter UpdateCounter = new SkipCounter(SKIP_UPDATE_COUNT);
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -147,10 +136,9 @@ namespace RefineryManager
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
-            UpdateCounter++;
-            if (updateCounter != 0)
+            if (!UpdateCounter.Next())
             {
                 return;
             }
@@ -172,15 +160,13 @@ namespace RefineryManager
             // Используем уже собранные данные
             ProcessAutoCraft();
 
-            RefineryClearing();
+            ProcessRefinery();
 
             // --- РЕНДЕР ЭКРАНОВ ---
             // Проходим по словарям один раз, формируя текст
             UpdateDisplays(volumeSum, volumeMax);
 
-
             PrevTime = TimeNow;
-
         }
 
         private void ProcessAutoCraft()
@@ -467,13 +453,19 @@ namespace RefineryManager
             }
         }
 
-        private void RefineryClearing()
+
+
+        private void ProcessRefinery()
         {
             foreach (IMyRefinery refinery in refineries)
             {
                 TryTransferItems(refinery, containers);
             }
+
+
         }
+
+        private static readonly Random random = new Random();
 
         public bool TryTransferItems(IMyRefinery refinery, List<IMyCargoContainer> containers)
         {
@@ -496,7 +488,6 @@ namespace RefineryManager
                 return false;
             }
 
-            Random random = new Random();
             IMyCargoContainer selectedContainer = availableContainers[random.Next(availableContainers.Count)];
             IMyInventory containerInventory = selectedContainer.GetInventory();
 
@@ -899,6 +890,59 @@ namespace RefineryManager
                     }
                     return indexes != 0 ? sum / indexes : 0;
                 }
+            }
+        }
+
+        #endregion
+
+        #region counter
+
+        public class SkipCounter
+        {
+            private readonly int _targetCount;
+            private int _currentCount;
+
+            public event Action<SkipCounter> Triggered;
+
+            public bool Is => _currentCount == _targetCount;
+
+            public int Current => _currentCount;
+
+            public int Target => _targetCount;
+
+            public SkipCounter(int targetCount = 10)
+            {
+                if (targetCount <= 0)
+                {
+                    targetCount = 10;
+                }
+
+                _targetCount = targetCount;
+                _currentCount = 0;
+            }
+
+            public bool Next()
+            {
+                _currentCount++;
+
+                if (_currentCount >= _targetCount)
+                {
+                    _currentCount = 0;
+                    Triggered?.Invoke(this);
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _currentCount = 0;
+            }
+
+            public static implicit operator bool(SkipCounter counter)
+            {
+                return counter.Is;
             }
         }
 
