@@ -109,14 +109,21 @@ namespace RefineryManager
             lastRecompileTime = TimeNow;
             grid = Me.CubeGrid;
             InitScreens();
-            InitBlocks(containers);
+            InitBlocks(containers, "BaseCargoContainer");
             InitBlocks(refineries);
             InitBlocks(assemblers);
         }
 
-        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        public void InitBlocks<T>(List<T> outList, string withNaming = "") where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
         {
             GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            if (!string.IsNullOrEmpty(withNaming))
+            {
+                for (int i = 0; i < outList.Count; i++)
+                {
+                    outList[i].CustomName = $"{withNaming}_{i}";
+                }
+            }
         }
 
         private Dictionary<string, double> components = new Dictionary<string, double>();
@@ -258,7 +265,7 @@ namespace RefineryManager
                         income = incomeTotal[item.Key].Average;
                     }
 
-                    double consumptionPerSec = income * perSec;
+                    float consumptionPerSec = (float)(income * perSec);
 
                     if (income != 0)
                     {
@@ -266,9 +273,8 @@ namespace RefineryManager
 
                         if (consumptionPerSec < 0)
                         {
-                            double secondsLeft = Math.Abs(item.Value / consumptionPerSec);
+                            long secondsLeft = (long)Math.Abs(item.Value / consumptionPerSec);
                             string timeStr = TimeSpanToString(TimeSpan.FromSeconds(secondsLeft));
-
                             oresString += $"{CountToString(item.Value, "0.00")} ({timeStr})";
                         }
                         else
@@ -461,10 +467,11 @@ namespace RefineryManager
             {
                 TryTransferItems(refinery, containers);
             }
-            if (counterRefinery.Next())
-            {
-                BalanceRefineries();
-            }
+
+            // if (counterRefinery.Next())
+            // {
+            //     BalanceRefineries();
+            // }
         }
 
         public class FastOreComparer : IEqualityComparer<MyItemType>
@@ -547,6 +554,9 @@ namespace RefineryManager
             }
         }
 
+        #region alternative
+
+/*
         private void BalanceRefineries2()
         {
             Dictionary<MyItemType, MyFixedPoint> wholeOres = new Dictionary<MyItemType, MyFixedPoint>();
@@ -635,6 +645,9 @@ namespace RefineryManager
                 }
             }
         }
+*/
+
+        #endregion
 
         private bool TryMoveItem(IMyInventory donor, IMyInventory recipient, MyInventoryItem item, MyFixedPoint count)
         {
