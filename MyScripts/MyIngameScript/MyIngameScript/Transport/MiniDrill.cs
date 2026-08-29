@@ -70,9 +70,20 @@ namespace MiniDrill
             thisScreens = SCR.GetAll(Me, true, 1.6f);
         }
 
-        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        public void InitBlocks<T>(List<T> outList, string withNaming = "", IMyCubeGrid cubeGrid = null) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
         {
-            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            if (cubeGrid == null)
+            {
+                cubeGrid = grid;
+            }
+            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == cubeGrid && !x.CustomName.Contains("scrIgnore"));
+            if (!string.IsNullOrEmpty(withNaming))
+            {
+                for (int i = 0; i < outList.Count; i++)
+                {
+                    outList[i].CustomName = $"{withNaming}{typeof(T)}_{i}";
+                }
+            }
         }
 
         public void InitBlock<T>(out T outBlock) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
@@ -85,13 +96,15 @@ namespace MiniDrill
         #endregion
 
         private const string NAME = "Drill";
-        
+
         private IMyCockpit cockpit;
         private List<SCR> scr;
         private SCR cargoDrill;
         private List<IMyCargoContainer> containers = new List<IMyCargoContainer>();
         private List<IMyMotorStator> hinges = new List<IMyMotorStator>();
         private List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
+
+        private IMyShipConnector connector;
 
         private void AdditionInits()
         {
@@ -105,6 +118,7 @@ namespace MiniDrill
             InitBlocks(containers);
             InitBlocks(hinges);
             InitBlocks(wheels);
+            InitBlock(out connector);
             speed = wheels[0].GetValue<float>("Speed Limit");
         }
 
@@ -140,7 +154,7 @@ namespace MiniDrill
         }
 
         private float speed = 0;
-        private const float FAST = 50;
+        private const float FAST = 80;
         private const float SLOW = 13;
 
         private void ProcessWheels(string command)
@@ -211,6 +225,8 @@ namespace MiniDrill
             }
         }
 
+        private bool emptyed = false;
+
         private void ProcessContainers()
         {
             float currentVolume = 0;
@@ -223,11 +239,88 @@ namespace MiniDrill
                 maxVolume += (float)inv.MaxVolume;
                 currentVolume += (float)inv.CurrentVolume;
             }
-
-            string str = $"{currentVolume / maxVolume * 100:0.0}%";
+            float percent = currentVolume / maxVolume;
+            string str = $"{percent * 100:0.0}%\nEmpty:\n{emptyed}";
 
             scr[0].SetText(str);
             cargoDrill.SetText("\n\n\n" + str);
+
+            if (connector.IsConnected && percent > 0.02f)
+            {
+                emptyed = true;
+
+                IMyShipConnector other = connector.OtherConnector;
+                List<IMyCargoContainer> otherContainers = new List<IMyCargoContainer>();
+                InitBlocks(otherContainers, "", other.CubeGrid);
+
+                for (int i = 0; i < containers.Count; i++)
+                {
+                    IMyInventory checkedInventoryFrom = null;
+                    IMyInventory checkedInventoryTo = null;
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (TryCheckAndGetPath(containers[i].GetInventory(), otherContainers, out checkedInventoryFrom, out checkedInventoryTo))
+                        {
+                            break;
+                        }
+                    }
+                    if (checkedInventoryFrom != null && checkedInventoryTo != null)
+                    {
+                        TryWholeInventoryMove(checkedInventoryFrom, checkedInventoryTo);
+                    }
+                }
+            }
+
+            if (!connector.IsConnected && emptyed)
+            {
+                emptyed = false;
+            }
+        }
+
+
+
+        private static void TryWholeInventoryMove(IMyInventory checkedInventoryFrom, IMyInventory checkedInventoryTo)
+        {
+            for (int i = checkedInventoryFrom.ItemCount - 1; i >= 0; i--)
+            {
+                MyInventoryItem? item = checkedInventoryFrom.GetItemAt(i);
+                if (item.HasValue)
+                {
+                    MyInventoryItem valueItem = item.Value;
+                    if (checkedInventoryFrom.CanTransferItemTo(checkedInventoryTo, item.Value.Type))
+                    {
+                        checkedInventoryFrom.TransferItemTo(checkedInventoryTo, valueItem, item.Value.Amount);
+                    }
+                }
+            }
+        }
+
+        private static bool TryCheckAndGetPath(IMyInventory inventoryFrom, List<IMyCargoContainer> containers, out IMyInventory checkedInventoryFrom, out IMyInventory checkedInventoryTo)
+        {
+            checkedInventoryFrom = null;
+            checkedInventoryTo = null;
+            if (inventoryFrom == null || containers == null || containers.Count == 0)
+            {
+                return false;
+            }
+
+            checkedInventoryFrom = inventoryFrom;
+
+            if (checkedInventoryFrom.VolumeFillFactor <= 0f)
+            {
+                return false;
+            }
+
+            IMyCargoContainer availableContainer = containers.FirstOrDefault(c => !c.GetInventory().IsFull);
+
+            if (availableContainer == null)
+            {
+                return false;
+            }
+
+            checkedInventoryTo = availableContainer.GetInventory();
+            return true;
         }
 
         #region SCR

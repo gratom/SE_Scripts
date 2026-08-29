@@ -26,25 +26,25 @@ namespace RefineryManager
 
         private Dictionary<string, int> componentsMinimum = new Dictionary<string, int>()
         {
-            { "BulletproofGlass", 500 }, //бронестекло
-            { "ComputerComponent", 3000 }, //компьютер
-            { "ConstructionComponent", 5000 }, //строительный компонент
-            { "DetectorComponent", 100 }, //компоненты детектора руды
-            { "Display", 500 }, //экран
+            { "BulletproofGlass", 10000 }, //бронестекло
+            { "ComputerComponent", 30000 }, //компьютер
+            { "ConstructionComponent", 50000 }, //строительный компонент
+            { "DetectorComponent", 1000 }, //компоненты детектора руды
+            { "Display", 5000 }, //экран
             { "ExplosivesComponent", 0 }, //взрывчатка
-            { "GirderComponent", 2000 }, //балки
+            { "GirderComponent", 30000 }, //балки
             { "GravityGeneratorComponent", 0 }, //компоненты грави-генератора
-            { "InteriorPlate", 5000 }, //внутренняя пластина
-            { "LargeTube", 1000 }, //большая труба
-            { "MedicalComponent", 0 }, //медицинские компоненты
-            { "MetalGrid", 2000 }, //решетка
-            { "MotorComponent", 2000 }, //мотор
-            { "PowerCell", 2000 }, //батарея
-            { "RadioCommunicationComponent", 500 }, //радио-компоненты
+            { "InteriorPlate", 50000 }, //внутренняя пластина
+            { "LargeTube", 10000 }, //большая труба
+            { "MedicalComponent", 100 }, //медицинские компоненты
+            { "MetalGrid", 20000 }, //решетка
+            { "MotorComponent", 20000 }, //мотор
+            { "PowerCell", 30000 }, //батарея
+            { "RadioCommunicationComponent", 1000 }, //радио-компоненты
             { "ReactorComponent", 0 }, //реакторные компоненты
-            { "SmallTube", 5000 }, //малая труба
-            { "SolarCell", 2000 }, //солненые ячейки
-            { "SteelPlate", 20000 }, //стальная пластина
+            { "SmallTube", 50000 }, //малая труба
+            { "SolarCell", 20000 }, //солненые ячейки
+            { "SteelPlate", 100000 }, //стальная пластина
             { "Superconductor", 0 }, //сверхпроводник
             { "ThrustComponent", 0 } //ионный ускоритель
         };
@@ -274,7 +274,16 @@ namespace RefineryManager
                         if (consumptionPerSec < 0)
                         {
                             long secondsLeft = (long)Math.Abs(item.Value / consumptionPerSec);
-                            string timeStr = TimeSpanToString(TimeSpan.FromSeconds(secondsLeft));
+
+                            TimeSpan t = TimeSpan.FromSeconds(10);
+                            try
+                            {
+                                t = TimeSpan.FromSeconds(secondsLeft);
+                            }
+                            catch (Exception e)
+                            {
+                            }
+                            string timeStr = TimeSpanToString(t);
                             oresString += $"{CountToString(item.Value, "0.00")} ({timeStr})";
                         }
                         else
@@ -686,6 +695,8 @@ namespace RefineryManager
 
             return true;
         }
+
+
 
         private static void TryWholeInventoryMove(IMyInventory checkedInventoryFrom, IMyInventory checkedInventoryTo)
         {
