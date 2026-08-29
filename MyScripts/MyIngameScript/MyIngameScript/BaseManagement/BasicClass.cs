@@ -80,6 +80,8 @@ namespace BasicClass
 
         #endregion
 
+        private const string NAME = "SCRIPT_NAME";
+
         private void AdditionInits()
         {
 //INIT HERE---------
@@ -96,7 +98,7 @@ namespace BasicClass
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.CustomName}-{NAME} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             if (!UpdateCounter.Next())
             {

@@ -319,7 +319,7 @@ namespace RefineryManager
 
             screens[ORE_SCREEN]?.SetText(oresString);
             screens[INGOT_SCREEN]?.SetText(ingotsString);
-            screens[CARGO_SCREEN]?.SetText(strCargo);
+            screens[CARGO_SCREEN]?.SetText($"{strCargo}\n\n{strCargoPersent}");
             screens[COMPONENTS_SCREEN]?.SetText(componentsString);
         }
 

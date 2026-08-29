@@ -25,7 +25,7 @@ namespace Batteries
         #region ALL
 
         #region basics
-
+        
         private DateTime TimeNow => DateTime.Now;
         private DateTime PrevTime;
         private TimeSpan DeltaTime => TimeNow - PrevTime;
@@ -77,6 +77,8 @@ namespace Batteries
 
         #endregion
 
+        private const string NAME = "Battery";
+        
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
         private const string SCREEN_BATTERIES = "batteriesSCR";
@@ -103,7 +105,7 @@ namespace Batteries
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.CustomName}\n{NAME}\n working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             UpdateCounter++;
             if (updateCounter != 0)
@@ -350,6 +352,6 @@ namespace Batteries
 
         #endregion
 
-        #endregion
+        #endregion,
     }
 }

@@ -84,6 +84,8 @@ namespace DrillBatteries
 
         #endregion
 
+        private const string NAME = "Batteries";
+        
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
         private IMyCockpit cockpit;
@@ -131,7 +133,7 @@ namespace DrillBatteries
             }
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.CustomName}\n{NAME}\n working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             UpdateCounter++;
             if (updateCounter != 0)
@@ -158,7 +160,10 @@ namespace DrillBatteries
             {
                 for (int i = 0; i < batteries.Count; i++)
                 {
-                    batteries[i].ChargeMode = ChargeMode.Recharge;
+                    if (i != IDofBest)
+                    {
+                        batteries[i].ChargeMode = ChargeMode.Recharge;
+                    }
                 }
             }
             else if (command == "auto")
@@ -170,12 +175,16 @@ namespace DrillBatteries
             }
         }
 
+        private int IDofBest = 0;
+
         public void BatteriesInfo()
         {
             double Sum = 0;
             double Max = 0;
             double EnPlus = 0;
             double EnMinus = 0;
+
+            float bestStored = 0;
 
             for (int i = 0; i < batteries.Count; i++)
             {
@@ -185,6 +194,12 @@ namespace DrillBatteries
                     Sum += batteries[i].CurrentStoredPower;
                     EnPlus += batteries[i].CurrentInput;
                     EnMinus += batteries[i].CurrentOutput;
+
+                    if (batteries[i].CurrentStoredPower > bestStored)
+                    {
+                        bestStored = batteries[i].CurrentStoredPower;
+                        IDofBest = i;
+                    }
                 }
             }
 

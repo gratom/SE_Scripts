@@ -84,6 +84,8 @@ namespace MiniDrill
 
         #endregion
 
+        private const string NAME = "Drill";
+        
         private IMyCockpit cockpit;
         private List<SCR> scr;
         private SCR cargoDrill;
@@ -120,7 +122,7 @@ namespace MiniDrill
             ProcessWheels(argument);
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.DisplayName} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, updateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.CustomName}\n{NAME}\n working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
             UpdateCounter++;
             if (updateCounter != 0)
