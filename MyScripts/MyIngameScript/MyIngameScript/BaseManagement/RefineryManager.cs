@@ -453,7 +453,7 @@ namespace RefineryManager
             }
         }
 
-
+        private SkipCounter counterRefinery = new SkipCounter(20);
 
         private void ProcessRefinery()
         {
@@ -461,49 +461,259 @@ namespace RefineryManager
             {
                 TryTransferItems(refinery, containers);
             }
+            if (counterRefinery.Next())
+            {
+                BalanceRefineries();
+            }
+        }
 
+        public class FastOreComparer : IEqualityComparer<MyItemType>
+        {
+            public bool Equals(MyItemType x, MyItemType y)
+            {
+                return x.SubtypeId == y.SubtypeId;
+            }
 
+            public int GetHashCode(MyItemType obj)
+            {
+                return obj.SubtypeId.GetHashCode();
+            }
+        }
+
+        private void BalanceRefineries()
+        {
+            Dictionary<MyItemType, MyFixedPoint> wholeOres = new Dictionary<MyItemType, MyFixedPoint>();
+            List<IMyInventory> refIn = new List<IMyInventory>(refineries.Count);
+            List<List<MyInventoryItem>> items = new List<List<MyInventoryItem>>(refineries.Count);
+
+            //get all ores in refineries and cach all
+            for (int i = 0; i < refineries.Count; i++)
+            {
+                items.Add(new List<MyInventoryItem>());
+                refIn.Add(refineries[i].InputInventory);
+                refIn[i].GetItems(items[i]);
+                for (int j = 0; j < items[i].Count; j++)
+                {
+                    AddOrCreate(wholeOres, items[i][j].Type, items[i][j].Amount);
+                }
+            }
+
+            foreach (KeyValuePair<MyItemType, MyFixedPoint> ore in wholeOres)
+            {
+                int targetValue = (int)ore.Value / refineries.Count;
+
+                // if count too small just skip
+                if (targetValue < 1000)
+                {
+                    continue;
+                }
+
+                List<int> donorsIndexes = new List<int>();
+                List<int> recipientIndexes = new List<int>();
+
+                for (int i = 0; i < refIn.Count; i++)
+                {
+
+                    MyFixedPoint val = GetItemAmount(items[i], ore.Key.SubtypeId);
+                    if (val > targetValue * 2)
+                    {
+                        donorsIndexes.Add(i);
+                    }
+                    else if (val < targetValue / 2)
+                    {
+                        recipientIndexes.Add(i);
+                    }
+                }
+
+                for (int i = donorsIndexes.Count - 1; i >= 0; i--)
+                {
+                    IMyInventory donor = refIn[donorsIndexes[i]];
+                    for (int j = recipientIndexes.Count - 1; j >= 0; j--)
+                    {
+                        IMyInventory recipient = refIn[recipientIndexes[j]];
+
+                        MyFixedPoint count = (MyFixedPoint)(targetValue * 0.9f);
+                        MyInventoryItem donorItem = items[donorsIndexes[i]].First(x => x.Type.SubtypeId == ore.Key.SubtypeId);
+
+                        TryMoveItem(donor, recipient, donorItem, count);
+                        recipientIndexes.RemoveAt(j);
+                        if (donor.GetItemAmount(ore.Key) < targetValue * 2)
+                        {
+                            donorsIndexes.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BalanceRefineries2()
+        {
+            Dictionary<MyItemType, MyFixedPoint> wholeOres = new Dictionary<MyItemType, MyFixedPoint>();
+            List<IMyInventory> refIn = new List<IMyInventory>(refineries.Count);
+
+            for (int i = 0; i < refineries.Count; i++)
+            {
+                IMyInventory inv = refineries[i].InputInventory;
+                refIn.Add(inv);
+
+                List<MyInventoryItem> items = new List<MyInventoryItem>();
+                inv.GetItems(items);
+                for (int j = 0; j < items.Count; j++)
+                {
+                    AddOrCreate(wholeOres, items[j].Type, items[j].Amount);
+                }
+            }
+
+            foreach (KeyValuePair<MyItemType, MyFixedPoint> ore in wholeOres)
+            {
+                int targetValue = (int)ore.Value / refineries.Count;
+                if (targetValue < 1000)
+                {
+                    continue;
+                }
+
+                List<int> donors = new List<int>();
+                List<int> recipients = new List<int>();
+
+                for (int i = 0; i < refIn.Count; i++)
+                {
+                    MyFixedPoint val = refIn[i].GetItemAmount(ore.Key);
+                    if (val > targetValue * 2)
+                    {
+                        donors.Add(i);
+                    }
+                    else if (val < targetValue / 2)
+                    {
+                        recipients.Add(i);
+                    }
+                }
+
+                int donorIndex = donors.Count - 1;
+                int recipientIndex = recipients.Count - 1;
+
+                while (donorIndex >= 0 && recipientIndex >= 0)
+                {
+                    IMyInventory donor = refIn[donors[donorIndex]];
+                    IMyInventory recipient = refIn[recipients[recipientIndex]];
+
+                    List<MyInventoryItem> donorItems = new List<MyInventoryItem>();
+                    donor.GetItems(donorItems);
+
+                    MyInventoryItem? itemToMove = null;
+                    for (int k = 0; k < donorItems.Count; k++)
+                    {
+                        if (donorItems[k].Type == ore.Key)
+                        {
+                            itemToMove = donorItems[k];
+                            break;
+                        }
+                    }
+
+                    if (itemToMove == null)
+                    {
+                        donorIndex--;
+                        continue;
+                    }
+
+                    MyFixedPoint count = (MyFixedPoint)(targetValue * 0.9f);
+
+                    if (donor.CanTransferItemTo(recipient, ore.Key))
+                    {
+                        donor.TransferItemTo(recipient, itemToMove.Value, count);
+                    }
+
+                    if (donor.GetItemAmount(ore.Key) < targetValue * 2)
+                    {
+                        donorIndex--;
+                    }
+
+                    if (recipient.GetItemAmount(ore.Key) > targetValue / 2)
+                    {
+                        recipientIndex--;
+                    }
+                }
+            }
+        }
+
+        private bool TryMoveItem(IMyInventory donor, IMyInventory recipient, MyInventoryItem item, MyFixedPoint count)
+        {
+            if (donor.CanTransferItemTo(recipient, item.Type))
+            {
+                donor.TransferItemTo(recipient, item, count);
+                return true;
+            }
+            return false;
+        }
+
+        private MyFixedPoint GetItemAmount(List<MyInventoryItem> item, string keySubtypeId)
+        {
+            for (int i = 0; i < item.Count; i++)
+            {
+                if (item[i].Type.SubtypeId == keySubtypeId)
+                {
+                    return item[i].Amount;
+                }
+            }
+            return 0;
         }
 
         private static readonly Random random = new Random();
 
         public bool TryTransferItems(IMyRefinery refinery, List<IMyCargoContainer> containers)
         {
-            if (refinery == null || containers == null || containers.Count == 0)
+            IMyInventory checkedInventoryFrom;
+            IMyInventory checkedInventoryTo;
+            if (!TryCheckAndGetPath(refinery?.OutputInventory, containers, out checkedInventoryFrom, out checkedInventoryTo))
             {
                 return false;
             }
 
-            IMyInventory outputInventory = refinery.OutputInventory;
+            TryWholeInventoryMove(checkedInventoryFrom, checkedInventoryTo);
 
-            if (outputInventory.VolumeFillFactor <= 0f)
+            return true;
+        }
+
+        private static void TryWholeInventoryMove(IMyInventory checkedInventoryFrom, IMyInventory checkedInventoryTo)
+        {
+            for (int i = checkedInventoryFrom.ItemCount - 1; i >= 0; i--)
             {
-                return false;
-            }
-
-            List<IMyCargoContainer> availableContainers = containers.Where(c => !c.GetInventory().IsFull).ToList();
-
-            if (availableContainers.Count == 0)
-            {
-                return false;
-            }
-
-            IMyCargoContainer selectedContainer = availableContainers[random.Next(availableContainers.Count)];
-            IMyInventory containerInventory = selectedContainer.GetInventory();
-
-            for (int i = 0; i < outputInventory.ItemCount; i++)
-            {
-                MyInventoryItem? item = outputInventory.GetItemAt(i);
+                MyInventoryItem? item = checkedInventoryFrom.GetItemAt(i);
                 if (item.HasValue)
                 {
                     MyInventoryItem valueItem = item.Value;
-                    if (refinery.OutputInventory.CanTransferItemTo(containerInventory, item.Value.Type))
+                    if (checkedInventoryFrom.CanTransferItemTo(checkedInventoryTo, item.Value.Type))
                     {
-                        outputInventory.TransferItemTo(containerInventory, valueItem, item.Value.Amount);
+                        checkedInventoryFrom.TransferItemTo(checkedInventoryTo, valueItem, item.Value.Amount);
                     }
                 }
             }
+        }
 
+        private static bool TryCheckAndGetPath(IMyInventory inventoryFrom, List<IMyCargoContainer> containers, out IMyInventory checkedInventoryFrom, out IMyInventory checkedInventoryTo)
+        {
+            checkedInventoryFrom = null;
+            checkedInventoryTo = null;
+            if (inventoryFrom == null || containers == null || containers.Count == 0)
+            {
+                return false;
+            }
+
+            checkedInventoryFrom = inventoryFrom;
+
+            if (checkedInventoryFrom.VolumeFillFactor <= 0f)
+            {
+                return false;
+            }
+
+            IMyCargoContainer availableContainer = containers.FirstOrDefault(c => !c.GetInventory().IsFull);
+
+            if (availableContainer == null)
+            {
+                return false;
+            }
+
+            checkedInventoryTo = availableContainer.GetInventory();
             return true;
         }
 
@@ -943,6 +1153,22 @@ namespace RefineryManager
             public static implicit operator bool(SkipCounter counter)
             {
                 return counter.Is;
+            }
+        }
+
+        #endregion
+
+        #region dictionary extension
+
+        public static void AddOrCreate<T1>(Dictionary<T1, MyFixedPoint> dictionary, T1 key, MyFixedPoint value)
+        {
+            if (dictionary.ContainsKey(key))
+            {
+                dictionary[key] += value;
+            }
+            else
+            {
+                dictionary.Add(key, value);
             }
         }
 
