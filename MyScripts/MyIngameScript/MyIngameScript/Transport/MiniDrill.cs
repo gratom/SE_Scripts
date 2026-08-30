@@ -101,10 +101,13 @@ namespace MiniDrill
         private List<SCR> scr;
         private SCR cargoDrill;
         private List<IMyCargoContainer> containers = new List<IMyCargoContainer>();
+        private List<IMyShipDrill> drills = new List<IMyShipDrill>();
         private List<IMyMotorStator> hinges = new List<IMyMotorStator>();
         private List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
 
         private IMyShipConnector connector;
+
+        private const float RAD2DEG = 57.29f;
 
         private void AdditionInits()
         {
@@ -119,12 +122,21 @@ namespace MiniDrill
             InitBlocks(hinges);
             InitBlocks(wheels);
             InitBlock(out connector);
+            InitBlocks(drills, "", hinges[0].TopGrid);
             speed = wheels[0].GetValue<float>("Speed Limit");
+
+            targetAngle = hinges[0].Angle * RAD2DEG;
+            for (int i = 0; i < hinges.Count; i++)
+            {
+                hinges[i].LowerLimitDeg = targetAngle - 0.3f;
+                hinges[i].UpperLimitDeg = targetAngle + 0.3f;
+            }
+
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
-            scr[1].SetText($"{rotState}\n{hinges[0].Angle * 57.29f:0.0}\nspeed:{speed}");
+            scr[1].SetText($"Target:{targetAngle:0.0}\n{hinges[0].Angle * RAD2DEG:0.0}\nspeed:{speed}");
 
             #region basics
 
@@ -189,39 +201,35 @@ namespace MiniDrill
             }
         }
 
-        private string rotState = "rot ";
+        private float targetAngle = 0;
 
         private void ProcessHinge(string command)
         {
-
-
             if (string.IsNullOrEmpty(command))
             {
                 return;
             }
 
-            float rot = 0;
             switch (command)
             {
                 case "up":
-                    rot = 1;
-                    rotState = "rot up";
+                    targetAngle += 5;
+                    targetAngle = Math.Max(Math.Min(targetAngle, 50), -15);
+                    for (int i = 0; i < hinges.Count; i++)
+                    {
+                        hinges[i].LowerLimitDeg = targetAngle - 0.3f;
+                        hinges[i].UpperLimitDeg = targetAngle + 0.3f;
+                    }
                     break;
                 case "down":
-                    rot = -1;
-                    rotState = "rot down";
+                    targetAngle -= 5;
+                    targetAngle = Math.Max(Math.Min(targetAngle, 50), -15);
+                    for (int i = 0; i < hinges.Count; i++)
+                    {
+                        hinges[i].LowerLimitDeg = targetAngle - 0.3f;
+                        hinges[i].UpperLimitDeg = targetAngle + 0.3f;
+                    }
                     break;
-            }
-
-            if (rot == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < hinges.Count; i++)
-            {
-                IMyMotorStator h = hinges[i];
-                h.TargetVelocityRPM = rot;
             }
         }
 
@@ -234,11 +242,18 @@ namespace MiniDrill
 
             for (int i = 0; i < containers.Count; i++)
             {
-                IMyCargoContainer cont = containers[i];
-                IMyInventory inv = cont.GetInventory();
+                IMyInventory inv = containers[i].GetInventory();
                 maxVolume += (float)inv.MaxVolume;
                 currentVolume += (float)inv.CurrentVolume;
             }
+
+            for (int i = 0; i < drills.Count; i++)
+            {
+                IMyInventory inv = drills[i].GetInventory();
+                maxVolume += (float)inv.MaxVolume;
+                currentVolume += (float)inv.CurrentVolume;
+            }
+
             float percent = currentVolume / maxVolume;
             string str = $"{percent * 100:0.0}%\nEmpty:\n{emptyed}";
 
@@ -312,7 +327,11 @@ namespace MiniDrill
                 return false;
             }
 
-            IMyCargoContainer availableContainer = containers.FirstOrDefault(c => !c.GetInventory().IsFull);
+            IMyCargoContainer availableContainer = containers.Where(c =>
+            {
+                IMyInventory inve = c.GetInventory();
+                return inve.CanPutItems && (double)inve.CurrentVolume / (double)inve.MaxVolume < 0.5;
+            }).FirstOrDefault();
 
             if (availableContainer == null)
             {

@@ -25,7 +25,7 @@ namespace Batteries
         #region ALL
 
         #region basics
-        
+
         private DateTime TimeNow => DateTime.Now;
         private DateTime PrevTime;
         private TimeSpan DeltaTime => TimeNow - PrevTime;
@@ -78,7 +78,7 @@ namespace Batteries
         #endregion
 
         private const string NAME = "Battery";
-        
+
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
         private const string SCREEN_BATTERIES = "batteriesSCR";
@@ -169,7 +169,9 @@ namespace Batteries
                 InOut += "\nBatteries charged";
             }
 
-            scr?.SetText($"{strVolume}\n{strVolumePersent}\n{InOut}\n");
+            string batteriesTextArray = $"Active count:{batteries.Count}";
+
+            scr?.SetText($"{strVolume}\n{strVolumePersent}\n{InOut}\n\n{batteriesTextArray}");
             scrq?.SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}");
         }
 

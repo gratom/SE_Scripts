@@ -45,7 +45,7 @@ namespace RefineryManager
             { "SmallTube", 50000 }, //малая труба
             { "SolarCell", 20000 }, //солненые ячейки
             { "SteelPlate", 100000 }, //стальная пластина
-            { "Superconductor", 0 }, //сверхпроводник
+            { "Superconductor", 1000 }, //сверхпроводник
             { "ThrustComponent", 0 } //ионный ускоритель
         };
 

@@ -85,7 +85,7 @@ namespace DrillBatteries
         #endregion
 
         private const string NAME = "Batteries";
-        
+
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
         private IMyCockpit cockpit;
@@ -234,7 +234,7 @@ namespace DrillBatteries
                 InOut += "full";
             }
 
-            scr[2].SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}\n{InOut}");
+            scr[2].SetText($"{strVolumePersent}\n{(time > 0 ? "charging" : "discharging")}\n{InOut}\nact:{batteries.Count}[{IDofBest}]");
             scr[3].SetText($"{(connectorState ? "connected" : "disconnected")}");
         }
 
