@@ -325,7 +325,11 @@ namespace RefineryManager
                     ingotsString += "\n";
                 }
             }
-
+            oresString += "\n\n";
+            for (int i = 0; i < refineries.Count; i++)
+            {
+                oresString += $"Ref{i}:{(refineries[i].IsProducing ? "Y" : "N")}\n";
+            }
             screens[ORE_SCREEN]?.SetText(oresString);
             screens[INGOT_SCREEN]?.SetText(ingotsString);
             screens[CARGO_SCREEN]?.SetText($"{strCargo}\n\n{strCargoPersent}");

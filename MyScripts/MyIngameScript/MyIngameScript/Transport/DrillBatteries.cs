@@ -160,10 +160,7 @@ namespace DrillBatteries
             {
                 for (int i = 0; i < batteries.Count; i++)
                 {
-                    if (i != IDofBest)
-                    {
-                        batteries[i].ChargeMode = ChargeMode.Recharge;
-                    }
+                    batteries[i].ChargeMode = i != IDofBest ? ChargeMode.Recharge : ChargeMode.Auto;
                 }
             }
             else if (command == "auto")
