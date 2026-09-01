@@ -108,7 +108,7 @@ namespace DrillBatteries
 
         public void Main(string argument, UpdateType updateSource)
         {
-            if (connector.IsConnected)
+            if (connector?.IsConnected ?? false)
             {
                 if (!connectorState)
                 {
