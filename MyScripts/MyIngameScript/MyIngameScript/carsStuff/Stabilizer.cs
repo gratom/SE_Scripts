@@ -24,7 +24,7 @@ namespace Stabilizer
     {
         private static float STRENGHT = 2f;
 
-        
+
         public List<SCR> InitAllSCR(IMyGridTerminalSystem gridTerminalSystem = null, bool autoinit = true)
         {
             if (gridTerminalSystem == null)
@@ -260,6 +260,7 @@ namespace Stabilizer
         private void ApplyGyroValues(Vector3D rotation)
         {
             rotation *= STRENGHT;
+
             //rotation = new Vector3D(Math.Sign(rotation.X) * Math.Pow(Math.Abs(rotation.X), STRENGHT), rotation.Y, Math.Sign(rotation.Z) * Math.Pow(Math.Abs(rotation.Z), STRENGHT));
             foreach (IMyGyro gyro in gyros)
             {

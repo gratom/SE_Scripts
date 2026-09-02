@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace DrillBatteries
+namespace WDrillBatteries
 {
     internal partial class Program : MyGridProgram
     {
@@ -70,21 +70,48 @@ namespace DrillBatteries
             thisScreens = SCR.GetAll(Me, true, 1.6f);
         }
 
-        public void InitBlocks<T>(List<T> outList) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        public void InitBlocks<T>(List<T> outList, string withNaming = "", IMyCubeGrid cubeGrid = null) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
         {
-            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
+            if (cubeGrid == null)
+            {
+                cubeGrid = grid;
+            }
+            GridTerminalSystem.GetBlocksOfType<T>(outList, x => x.CubeGrid == cubeGrid && !x.CustomName.Contains("scrIgnore"));
+            if (!string.IsNullOrEmpty(withNaming))
+            {
+                for (int i = 0; i < outList.Count; i++)
+                {
+                    outList[i].CustomName = $"{withNaming}{typeof(T)}_{i}";
+                }
+            }
         }
 
-        public void InitBlock<T>(out T outBlock) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        public void InitBlock<T>(out T outBlock, string name = "", bool nameOverride = false) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
         {
             List<T> temp = new List<T>();
             GridTerminalSystem.GetBlocksOfType<T>(temp, x => x.CubeGrid == grid && !x.CustomName.Contains("scrIgnore"));
-            outBlock = temp.FirstOrDefault();
+            if (name == "")
+            {
+                outBlock = temp.FirstOrDefault();
+            }
+            else
+            {
+                outBlock = temp.FirstOrDefault(x => x.CustomName == name);
+                if (outBlock == null)
+                {
+                    outBlock = temp.FirstOrDefault();
+                }
+            }
+
+            if (outBlock != null && nameOverride)
+            {
+                outBlock.CustomName = name;
+            }
         }
 
         #endregion
 
-        private const string NAME = "Batteries";
+        private const string NAME = "WBatteries";
 
         private List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 
@@ -96,11 +123,11 @@ namespace DrillBatteries
         private void AdditionInits()
         {
 //INIT HERE---------
-            InitBlock(out cockpit);
+            InitBlock(out cockpit, "WDrillCockpit");
             InitBlock(out connector);
             scr = SCR.GetAll(cockpit, false);
             scr[2]?.SetAsTXT(2f);
-            scr[3]?.SetAsTXT(2f);
+            scr[3]?.SetAsTXT(1.6f);
             InitBlocks(batteries);
         }
 

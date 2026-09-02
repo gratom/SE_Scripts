@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace BasicClass
+namespace WellDrill
 {
     internal partial class Program : MyGridProgram
     {
@@ -34,8 +34,19 @@ namespace BasicClass
         private DateTime lastRecompileTime = DateTime.Now;
 
         private const int SKIP_UPDATE_COUNT = 10;
+        private int updateCounter = 0;
         private const string LOAD_STRING = "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||";
-        private SkipCounter UpdateCounter = new SkipCounter(SKIP_UPDATE_COUNT);
+        private int UpdateCounter
+        {
+            get
+            {
+                return updateCounter;
+            }
+            set
+            {
+                updateCounter = value % SKIP_UPDATE_COUNT;
+            }
+        }
 
         private IMyCubeGrid grid;
         private List<SCR> thisScreens;
@@ -100,27 +111,61 @@ namespace BasicClass
 
         #endregion
 
-        private const string NAME = "SCRIPT_NAME";
+        private const string NAME = "WDrill";
+        private const string PISTON_UP_NAME = "Well_Drill_Piston_Up";
+        private const string PISTON_DOWN_NAME = "Well_Drill_Piston_Down";
+
+        private IMyCockpit cockpit;
+        private List<SCR> scr;
+        private SCR cargoDrill;
+        private List<IMyCargoContainer> containers = new List<IMyCargoContainer>();
+        private List<IMyShipDrill> drills = new List<IMyShipDrill>();
+        private List<IMyMotorSuspension> wheels = new List<IMyMotorSuspension>();
+
+
+        private List<IMyPistonBase> pistonsUP = new List<IMyPistonBase>();
+        private List<IMyPistonBase> pistonsDOWN = new List<IMyPistonBase>();
+
+        private IMyShipConnector connector;
+
+        private const float RAD2DEG = 57.29f;
 
         private void AdditionInits()
         {
 //INIT HERE---------
 
+            InitBlock(out cockpit, "WDrillCockpit");
+            scr = SCR.GetAll(cockpit, false);
+            scr[0].SetAsTXT(2f);
+            scr[1].SetAsTXT(1.5f);
+            cargoDrill = new SCR(GridTerminalSystem, "cargoWDrill", true, 4);
+            InitBlocks(containers);
+            InitBlocks(wheels);
+            InitBlock(out connector);
+            speed = wheels[0].GetValue<float>("Speed Limit");
+
+            GridTerminalSystem.GetBlocksOfType<IMyPistonBase>(pistonsUP, x => x.CustomName == PISTON_UP_NAME);
+            GridTerminalSystem.GetBlocksOfType<IMyPistonBase>(pistonsDOWN, x => x.CustomName == PISTON_DOWN_NAME);
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
+            ProceedPistons(argument);
+            scr[1].SetText($"Well:{target:0.00}\nspeed:{speed}({cockpit.GetShipVelocities().LinearVelocity.Length():0.0})");
+
             #region basics
 
             if (argument == "RE")
             {
                 REinit();
             }
+            ProcessWheels(argument);
 
             DateTime t = TimeNow;
-            thisScreens[0].Text = $"{Me.CustomName}-{NAME} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+            thisScreens[0].Text = $"{Me.CustomName}\n{NAME}\n working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
 
-            if (!UpdateCounter.Next())
+            UpdateCounter++;
+            if (updateCounter != 0)
             {
                 return;
             }
@@ -128,10 +173,199 @@ namespace BasicClass
             #endregion
 
 //CODE HERE----------------
-
+            ProcessContainers();
 
 //CODE END-----------------
             PrevTime = TimeNow;
+        }
+
+        private const float PISTON_VAL_CHANGE = 0.1f;
+        private const float PISTON_VAL_SPEED = 0.25f;
+        private float target = 0;
+        private float UpTarget => 10 - target;
+        private float DownTarget => target;
+
+        private void ProceedPistons(string argument)
+        {
+            if (string.IsNullOrEmpty(argument))
+            {
+                return;
+            }
+
+            float pistonSpeed = 0;
+
+            switch (argument)
+            {
+                case "up":
+                    target = Math.Min(10, Math.Max(0, target - PISTON_VAL_CHANGE));
+                    pistonSpeed = PISTON_VAL_SPEED;
+                    break;
+                case "down":
+                    target = Math.Min(10, Math.Max(0, target + PISTON_VAL_CHANGE));
+                    pistonSpeed = -PISTON_VAL_SPEED;
+                    break;
+            }
+
+            if (pistonSpeed == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pistonsUP.Count; i++)
+            {
+                pistonsUP[i].MaxLimit = UpTarget + PISTON_VAL_CHANGE;
+                pistonsUP[i].MinLimit = UpTarget - PISTON_VAL_CHANGE;
+                pistonsUP[i].Velocity = pistonSpeed;
+            }
+            for (int i = 0; i < pistonsDOWN.Count; i++)
+            {
+                pistonsDOWN[i].MaxLimit = DownTarget + PISTON_VAL_CHANGE;
+                pistonsDOWN[i].MinLimit = DownTarget - PISTON_VAL_CHANGE;
+                pistonsDOWN[i].Velocity = -pistonSpeed;
+            }
+        }
+
+        private float speed = 0;
+        private const float FAST = 120;
+        private const float SLOW = 13;
+
+        private void ProcessWheels(string command)
+        {
+            if (string.IsNullOrEmpty(command))
+            {
+                return;
+            }
+
+            float speedLimit = 0;
+            switch (command)
+            {
+                case "fast":
+                    speedLimit = FAST;
+                    speed = FAST;
+                    break;
+                case "slow":
+                    speedLimit = SLOW;
+                    speed = SLOW;
+                    break;
+            }
+
+            if (speedLimit == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < wheels.Count; i++)
+            {
+
+                wheels[i].SetValue<float>("Speed Limit", speedLimit);
+            }
+        }
+
+        private bool emptyed = false;
+
+        private void ProcessContainers()
+        {
+            float currentVolume = 0;
+            float maxVolume = 0;
+
+            for (int i = 0; i < containers.Count; i++)
+            {
+                IMyInventory inv = containers[i].GetInventory();
+                maxVolume += (float)inv.MaxVolume;
+                currentVolume += (float)inv.CurrentVolume;
+            }
+
+            for (int i = 0; i < drills.Count; i++)
+            {
+                IMyInventory inv = drills[i].GetInventory();
+                maxVolume += (float)inv.MaxVolume;
+                currentVolume += (float)inv.CurrentVolume;
+            }
+
+            float percent = currentVolume / maxVolume;
+            string str = $"{percent * 100:0.0}%\nEmpty:\n{emptyed}";
+
+            scr[0].SetText(str);
+            cargoDrill.SetText("\n\n\n" + str);
+
+            if ((connector?.IsConnected ?? false) && percent > 0.02f)
+            {
+                emptyed = true;
+
+                IMyShipConnector other = connector.OtherConnector;
+                List<IMyCargoContainer> otherContainers = new List<IMyCargoContainer>();
+                InitBlocks(otherContainers, "", other.CubeGrid);
+
+                for (int i = 0; i < containers.Count; i++)
+                {
+                    IMyInventory checkedInventoryFrom = null;
+                    IMyInventory checkedInventoryTo = null;
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (TryCheckAndGetPath(containers[i].GetInventory(), otherContainers, out checkedInventoryFrom, out checkedInventoryTo))
+                        {
+                            break;
+                        }
+                    }
+                    if (checkedInventoryFrom != null && checkedInventoryTo != null)
+                    {
+                        TryWholeInventoryMove(checkedInventoryFrom, checkedInventoryTo);
+                    }
+                }
+            }
+
+            if ((!connector?.IsConnected ?? false) && emptyed)
+            {
+                emptyed = false;
+            }
+        }
+
+        private static void TryWholeInventoryMove(IMyInventory checkedInventoryFrom, IMyInventory checkedInventoryTo)
+        {
+            for (int i = checkedInventoryFrom.ItemCount - 1; i >= 0; i--)
+            {
+                MyInventoryItem? item = checkedInventoryFrom.GetItemAt(i);
+                if (item.HasValue)
+                {
+                    MyInventoryItem valueItem = item.Value;
+                    if (checkedInventoryFrom.CanTransferItemTo(checkedInventoryTo, item.Value.Type))
+                    {
+                        checkedInventoryFrom.TransferItemTo(checkedInventoryTo, valueItem, item.Value.Amount);
+                    }
+                }
+            }
+        }
+
+        private static bool TryCheckAndGetPath(IMyInventory inventoryFrom, List<IMyCargoContainer> containers, out IMyInventory checkedInventoryFrom, out IMyInventory checkedInventoryTo)
+        {
+            checkedInventoryFrom = null;
+            checkedInventoryTo = null;
+            if (inventoryFrom == null || containers == null || containers.Count == 0)
+            {
+                return false;
+            }
+
+            checkedInventoryFrom = inventoryFrom;
+
+            if (checkedInventoryFrom.VolumeFillFactor <= 0f)
+            {
+                return false;
+            }
+
+            IMyCargoContainer availableContainer = containers.Where(c =>
+            {
+                IMyInventory inve = c.GetInventory();
+                return inve.CanPutItems && (double)inve.CurrentVolume / (double)inve.MaxVolume < 0.5;
+            }).FirstOrDefault();
+
+            if (availableContainer == null)
+            {
+                return false;
+            }
+
+            checkedInventoryTo = availableContainer.GetInventory();
+            return true;
         }
 
         #region SCR
@@ -309,97 +543,6 @@ namespace BasicClass
             }
 
             return count.ToString(roundto);
-        }
-
-        #endregion
-
-        #region wheels
-
-        public class Wheel
-        {
-            public Wheel(IMyMotorSuspension suspension)
-            {
-                motor = suspension;
-            }
-
-            public IMyMotorSuspension motor;
-
-            private const string SPEED_LIMIT_STRING = "Speed Limit";
-            public float SpeedLimit
-            {
-                get
-                {
-                    return motor.GetValue<float>(SPEED_LIMIT_STRING);
-                }
-                set
-                {
-                    motor.SetValue<float>(SPEED_LIMIT_STRING, value);
-                }
-            }
-
-            public static List<Wheel> FromSus(List<IMyMotorSuspension> suspList)
-            {
-                List<Wheel> ret = new List<Wheel>(suspList.Count);
-                for (int i = 0; i < suspList.Count; i++)
-                {
-                    ret.Add(new Wheel(suspList[i]));
-                }
-                return ret;
-            }
-
-        }
-
-        #endregion
-
-        #region counter
-
-        public class SkipCounter
-        {
-            private readonly int _targetCount;
-            private int _currentCount;
-
-            public event Action<SkipCounter> Triggered;
-
-            public bool Is => _currentCount == _targetCount;
-
-            public int Current => _currentCount;
-
-            public int Target => _targetCount;
-
-            public SkipCounter(int targetCount = 10)
-            {
-                if (targetCount <= 0)
-                {
-                    targetCount = 10;
-                }
-
-                _targetCount = targetCount;
-                _currentCount = 0;
-            }
-
-            public bool Next()
-            {
-                _currentCount++;
-
-                if (_currentCount >= _targetCount)
-                {
-                    _currentCount = 0;
-                    Triggered?.Invoke(this);
-                    return true;
-                }
-
-                return false;
-            }
-
-            public void Reset()
-            {
-                _currentCount = 0;
-            }
-
-            public static implicit operator bool(SkipCounter counter)
-            {
-                return counter.Is;
-            }
         }
 
         #endregion

@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace BasicClass
+namespace InOutPistonDoor
 {
     internal partial class Program : MyGridProgram
     {
@@ -39,6 +39,7 @@ namespace BasicClass
 
         private IMyCubeGrid grid;
         private List<SCR> thisScreens;
+        private ActionUpdater updater = new ActionUpdater();
 
         public Program()
         {
@@ -100,16 +101,28 @@ namespace BasicClass
 
         #endregion
 
-        private const string NAME = "SCRIPT_NAME";
+        private const string NAME = "PistonDoor";
+
+        private const string PISTON_NAME = "Well_Drill_Exit_Piston";
+        private IMyPistonBase piston;
+
+        private ActionSequence liftDown;
+        private ActionSequence liftUp;
+        private const float PISTON_SPEED = 2f;
 
         private void AdditionInits()
         {
 //INIT HERE---------
-
+            liftDown = new ActionSequence(updater, 1.5f, (Action)PistonDown, 8f, (Action)PistonUp, 12f);
+            liftUp = new ActionSequence(updater, (Action)PistonDown, 8f, (Action)PistonUp, 12f);
+            InitBlock(out piston, PISTON_NAME);
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
+
+            ProceedArguments(argument);
+
             #region basics
 
             if (argument == "RE")
@@ -119,6 +132,9 @@ namespace BasicClass
 
             DateTime t = TimeNow;
             thisScreens[0].Text = $"{Me.CustomName}-{NAME} working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter.Current)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
+
+            updater.Update((float)DeltaTime.TotalSeconds);
+            PrevTime = TimeNow;
 
             if (!UpdateCounter.Next())
             {
@@ -131,8 +147,196 @@ namespace BasicClass
 
 
 //CODE END-----------------
-            PrevTime = TimeNow;
         }
+
+        private void PistonDown()
+        {
+            piston.Velocity = PISTON_SPEED;
+        }
+
+        private void PistonUp()
+        {
+            piston.Velocity = -PISTON_SPEED;
+        }
+
+        private void ProceedArguments(string s)
+        {
+            if (liftDown.IsPlaying || liftUp.IsPlaying)
+            {
+                return;
+            }
+            switch (s)
+            {
+                case "sIn":
+                    liftUp.TryPlay();
+                    break;
+                case "sOut":
+                    liftDown.TryPlay();
+                    break;
+            }
+        }
+
+        #region sequentions
+
+        public class ActionUpdater : IUpdater
+        {
+            public void Update(float deltaTime)
+            {
+                UpdateAction?.Invoke(deltaTime);
+            }
+
+            public event Action<float> UpdateAction;
+        }
+
+        public interface IUpdater
+        {
+            event Action<float> UpdateAction;
+        }
+
+        public class ActionSequence
+        {
+            private List<Action> actions = new List<Action>();
+            private List<float> delays = new List<float>();
+            private int currentIndex = 0;
+            private float currentTimer = 0f;
+            private bool isRunning = false;
+            private bool isPaused = false;
+            private IUpdater updater;
+
+            public bool IsPlaying => isRunning;
+
+            public ActionSequence(IUpdater updater, params object[] sequenceSteps)
+            {
+                this.updater = updater;
+                updater.UpdateAction += Update;
+                ParseSteps(sequenceSteps);
+            }
+
+            public void Play()
+            {
+                if (isRunning && !isPaused)
+                {
+                    return;
+                }
+
+                if (isPaused)
+                {
+                    isPaused = false;
+                    return;
+                }
+
+                currentIndex = 0;
+                currentTimer = 0f;
+                isRunning = true;
+                isPaused = false;
+
+                ExecuteCurrentStep();
+            }
+
+            public void TryPlay()
+            {
+                if (!isRunning)
+                {
+                    Play();
+                }
+            }
+
+            public void Pause()
+            {
+                if (isRunning)
+                {
+                    isPaused = true;
+                }
+            }
+
+            public void Stop()
+            {
+                isRunning = false;
+                isPaused = false;
+                currentIndex = 0;
+                currentTimer = 0f;
+            }
+
+            public void Restart()
+            {
+                Stop();
+                Play();
+            }
+
+            public void Update(float deltaTime)
+            {
+                if (!isRunning || isPaused)
+                {
+                    return;
+                }
+
+                if (currentIndex >= actions.Count)
+                {
+                    isRunning = false;
+                    return;
+                }
+
+                if (delays[currentIndex] > 0f)
+                {
+                    currentTimer += deltaTime;
+                    if (currentTimer < delays[currentIndex])
+                    {
+                        return;
+                    }
+                    currentTimer = 0f;
+                }
+
+                currentIndex++;
+                ExecuteCurrentStep();
+            }
+
+            private void ExecuteCurrentStep()
+            {
+                while (currentIndex < actions.Count)
+                {
+                    actions[currentIndex]?.Invoke();
+
+                    if (delays[currentIndex] > 0f)
+                    {
+                        currentTimer = 0f;
+                        break;
+                    }
+
+                    currentIndex++;
+                }
+
+                if (currentIndex >= actions.Count)
+                {
+                    isRunning = false;
+                }
+            }
+
+            private void ParseSteps(object[] steps)
+            {
+                for (int i = 0; i < steps.Length; i++)
+                {
+                    object step = steps[i];
+
+                    if (step is Action)
+                    {
+                        actions.Add((Action)step);
+                        delays.Add(0f);
+                    }
+                    else if (step is float)
+                    {
+                        actions.Add(null);
+                        delays.Add((float)step);
+                    }
+                    else if (step is int)
+                    {
+                        actions.Add(null);
+                        delays.Add((int)step);
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         #region SCR
 
