@@ -150,7 +150,11 @@ namespace WellDrill
 
         public void Main(string argument, UpdateType updateSource)
         {
+
             ProceedPistons(argument);
+            ProcessWheels(argument);
+            ProcessCommands(argument);
+
             scr[1].SetText($"Well:{target:0.00}\nspeed:{speed}({cockpit.GetShipVelocities().LinearVelocity.Length():0.0})");
 
             #region basics
@@ -159,7 +163,6 @@ namespace WellDrill
             {
                 REinit();
             }
-            ProcessWheels(argument);
 
             DateTime t = TimeNow;
             thisScreens[0].Text = $"{Me.CustomName}\n{NAME}\n working...\n{t.Hour:D2}:{t.Minute:D2}:{t.Second:D2}:{t.Millisecond:D3}\n{LOAD_STRING.Substring(0, UpdateCounter)}\nLast update:\n{(DateTime.Now - lastRecompileTime).ToString("hh\\:mm\\:ss")}";
@@ -174,9 +177,21 @@ namespace WellDrill
 
 //CODE HERE----------------
             ProcessContainers();
-
 //CODE END-----------------
+
             PrevTime = TimeNow;
+        }
+
+        private const string CHANNEL_TAG = "BASE_CHANNEL";
+
+        private void ProcessCommands(string argument)
+        {
+            if (argument == "conn")
+            {
+                Vector3D pos = connector.GetPosition();
+                string msg = $"UP_PARKING|{0}|{pos.X:0.00}|{pos.Y:0.00}|{pos.Z:0.00}";
+                IGC.SendBroadcastMessage(CHANNEL_TAG, msg, TransmissionDistance.AntennaRelay);
+            }
         }
 
         private const float PISTON_VAL_CHANGE = 0.1f;

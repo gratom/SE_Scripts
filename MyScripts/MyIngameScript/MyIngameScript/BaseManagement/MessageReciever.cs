@@ -18,7 +18,7 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace BasicClass
+namespace MessageReceiver
 {
     internal partial class Program : MyGridProgram
     {
@@ -100,12 +100,39 @@ namespace BasicClass
 
         #endregion
 
-        private const string NAME = "SCRIPT_NAME";
+        private const string NAME = "MSG RECEIVER";
+
+        private const string CHANNEL_TAG = "BASE_CHANNEL";
+        private IMyBroadcastListener subscriberChannel;
+
+        private SCR debug;
+
+        private RoboConnector roboConnector;
 
         private void AdditionInits()
         {
 //INIT HERE---------
+            subscriberChannel = IGC.RegisterBroadcastListener(CHANNEL_TAG);
+            debug = new SCR(GridTerminalSystem, "debug", true, 0.7f);
+            debug.SetText("debug");
+            InitConnector1();
+        }
 
+        private void InitConnector1()
+        {
+            IMyPistonBase pistonH1;
+            IMyPistonBase pistonL1;
+            IMyPistonBase pistonL2;
+            IMyMotorStator hinge1;
+            IMyShipConnector con1;
+
+            InitBlock(out pistonH1, "CONN1_PISTON_H1");
+            InitBlock(out pistonL1, "CONN1_PISTON_L1");
+            InitBlock(out pistonL2, "CONN1_PISTON_L2");
+            InitBlock(out hinge1, "CONN1_HINGE_1");
+            InitBlock(out con1, "CONN1_CONNECTOR");
+
+            roboConnector = new RoboConnector(pistonH1, pistonL1, pistonL2, hinge1, con1);
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -130,8 +157,154 @@ namespace BasicClass
 //CODE HERE----------------
 
 
+            while (subscriberChannel.HasPendingMessage)
+            {
+                MyIGCMessage msg = subscriberChannel.AcceptMessage();
+                string command = msg.Data.ToString();
+                string[] cmd = command.Split('|');
+                if (cmd[0] == "UP_PARKING")
+                {
+                    SetConnector(cmd);
+                }
+            }
+
 //CODE END-----------------
             PrevTime = TimeNow;
+        }
+
+        private void SetConnector(string[] cmd)
+        {
+            int id = 0;
+            Vector3D otherConnectorPos = Vector3D.Zero;
+
+            if (TryParseConnectorPos(cmd, out id, out otherConnectorPos))
+            {
+                debug.SetText($"cmnd:{cmd[0]}\nid:{cmd[1]}\nx:{cmd[2]}\ny:{cmd[3]}\nz:{cmd[4]}");
+
+            }
+        }
+
+        private bool TryParseConnectorPos(string[] cmd, out int id, out Vector3D otherConnectorPos)
+        {
+            id = 0;
+            otherConnectorPos = Vector3D.Zero;
+            if (cmd == null || cmd.Length < 5)
+            {
+                return false;
+            }
+            double x, y, z;
+            if (int.TryParse(cmd[1], out id) &&
+                double.TryParse(cmd[2], out x) &&
+                double.TryParse(cmd[3], out y) &&
+                double.TryParse(cmd[4], out z))
+            {
+                otherConnectorPos = new Vector3D(x, y, z);
+                return true;
+            }
+            return false;
+        }
+
+        public class RoboConnector
+        {
+            private const float TOP_PISTON_EXT = 1.41f;
+
+            public IMyPistonBase pistonH1;
+            public IMyPistonBase pistonL1;
+            public IMyPistonBase pistonL2;
+            public IMyMotorStator hinge1;
+            public IMyShipConnector con1;
+
+            public Piston H1;
+            public Piston L1;
+            public Piston L2;
+
+            public RoboConnector(IMyPistonBase h1, IMyPistonBase l1, IMyPistonBase l2, IMyMotorStator hinge, IMyShipConnector con)
+            {
+                pistonH1 = h1;
+                pistonL1 = l1;
+                pistonL2 = l2;
+                hinge1 = hinge;
+                con1 = con;
+
+
+            }
+
+            public class Piston
+            {
+                public IMyPistonBase baza;
+                public IMyAttachableTopBlock top;
+
+                public Piston(IMyPistonBase piston)
+                {
+                    baza = piston;
+                    top = baza.Top;
+                    target = baza.CurrentPosition;
+                    pos = target; //update piston data
+                }
+
+                public float pos
+                {
+                    get
+                    {
+                        return target;
+                    }
+                    set
+                    {
+                        target = value;
+                        baza.MaxLimit = target + 0.01f;
+                        baza.MinLimit = target - 0.01f;
+                        if (baza.CurrentPosition > baza.MaxLimit)
+                        {
+                            baza.Velocity = -1f;
+                        }
+                        else
+                        {
+                            baza.Velocity = 1f;
+                        }
+                    }
+                }
+                private float target;
+
+                public Vector3D realPos => top.GetPosition();
+                public Vector3D mathRealPos
+                {
+                    get
+                    {
+                        MatrixD baseMatrix = baza.WorldMatrix;
+                        double currentExtension = baza.CurrentPosition + TOP_PISTON_EXT;
+                        Vector3D worldOffset = Vector3D.TransformNormal(new Vector3D(0, currentExtension, 0), baseMatrix);
+                        return baseMatrix.Translation + worldOffset;
+                    }
+                }
+
+                public Vector3D minPosition => baza.WorldMatrix.Translation + baza.WorldMatrix.Up * 1.41;
+                public Vector3D maxPosition => baza.WorldMatrix.Translation + baza.WorldMatrix.Up * 11.41;
+                private Vector3D pistonAxis => baza.WorldMatrix.Up;
+
+                public void TrySetAsCloseAsPossibleTo(Vector3D targetPos)
+                {
+                    Vector3D pistonAxis = baza.WorldMatrix.Up;
+                    Vector3D minPosition = baza.WorldMatrix.Translation + pistonAxis * 1.41;
+
+                    // Вектор от минимальной точки поршня до целевой точки базы
+                    Vector3D toTarget = targetPos - minPosition;
+
+                    // Проекция вектора toTarget на ось поршня дает нам требуемое «абсолютное выдвижение» от центра базы
+                    // Так как pistonAxis — это единичный вектор, скалярное произведение сразу дает длину в метрах
+                    double projectedDistance = Vector3D.Dot(toTarget, pistonAxis);
+
+                    // Ограничиваем результат физическими лимитами поршня (от 0 до максимального хода, например 10)
+                    double minLimit = baza.LowestPosition; // обычно 0
+                    double maxLimit = baza.HighestPosition; // максимальный ход
+
+                    double clampedExtension = Clamp(projectedDistance - 1.41, minLimit, maxLimit);
+
+                    // Присваиваем в наше свойство pos
+                    pos = (float)clampedExtension;
+                }
+
+            }
+
         }
 
         #region SCR
@@ -265,6 +438,11 @@ namespace BasicClass
         #endregion
 
         #region toStr extensions
+
+        private string Vec3ToStr(Vector3D v, bool withEnters = true)
+        {
+            return withEnters ? $"x:{v.X:0.00}\ny:{v.Y:0.00}\nz:{v.Z:0.00}" : $"x:{v.X:0.00} y:{v.Y:0.00} z:{v.Z:0.00}";
+        }
 
         private string ValueToString(double count)
         {
