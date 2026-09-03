@@ -189,7 +189,7 @@ namespace WellDrill
             if (argument == "conn")
             {
                 Vector3D pos = connector.GetPosition();
-                pos += connector.WorldMatrix.Forward * 5;
+                pos += connector.WorldMatrix.Forward * 4.1f;
                 string msg = $"UP_PARKING|{0}|{pos.X:0.00}|{pos.Y:0.00}|{pos.Z:0.00}";
                 IGC.SendBroadcastMessage(CHANNEL_TAG, msg, TransmissionDistance.AntennaRelay);
             }

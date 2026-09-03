@@ -98,6 +98,29 @@ namespace MessageReceiver
             }
         }
 
+        public void InitAnyBlock<T>(out T outBlock, string name = "", bool nameOverride = false) where T : class, IMyEntity, IMyCubeBlock, IMyTerminalBlock
+        {
+            List<T> temp = new List<T>();
+            GridTerminalSystem.GetBlocksOfType<T>(temp, x => !x.CustomName.Contains("scrIgnore"));
+            if (name == "")
+            {
+                outBlock = temp.FirstOrDefault();
+            }
+            else
+            {
+                outBlock = temp.FirstOrDefault(x => x.CustomName == name);
+                if (outBlock == null)
+                {
+                    outBlock = temp.FirstOrDefault();
+                }
+            }
+
+            if (outBlock != null && nameOverride)
+            {
+                outBlock.CustomName = name;
+            }
+        }
+
         #endregion
 
         private const string NAME = "MSG RECEIVER";
@@ -126,14 +149,16 @@ namespace MessageReceiver
             IMyMotorStator hinge1;
             IMyShipConnector con1;
 
-            InitBlock(out pistonH1, "CONN1_PISTON_H1");
-            InitBlock(out pistonL1, "CONN1_PISTON_L1");
-            InitBlock(out pistonL2, "CONN1_PISTON_L2");
-            InitBlock(out hinge1, "CONN1_HINGE_1");
-            InitBlock(out con1, "CONN1_CONNECTOR");
+            InitAnyBlock(out pistonH1, "CONN1_PISTON_H1");
+            InitAnyBlock(out pistonL1, "CONN1_PISTON_L1");
+            InitAnyBlock(out pistonL2, "CONN1_PISTON_L2");
+            InitAnyBlock(out hinge1, "CONN1_HINGE_1");
+            InitAnyBlock(out con1, "CONN1_CONNECTOR");
 
             roboConnector = new RoboConnector(pistonH1, pistonL1, pistonL2, hinge1, con1);
         }
+
+        private bool isWasConnected = false;
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -156,15 +181,7 @@ namespace MessageReceiver
 
 //CODE HERE----------------
 
-            debug.SetText($"piston top: \n{Vec3ToStr(roboConnector.H1.top.WorldMatrix.Translation)}\n" +
-                          $"piston base: \n{Vec3ToStr(roboConnector.H1.baza.WorldMatrix.Translation)}\n" +
-                          $"piston offset: \n{Vec3ToStr(roboConnector.H1.top.WorldMatrix.Translation - roboConnector.H1.baza.WorldMatrix.Translation)} ");
-
-            // debug.SetText($"piston top: \n{Vec3ToStr(roboConnector.H1.top.WorldMatrix.Translation)}\n" +
-            //               $"hinge: \n{Vec3ToStr(roboConnector.hinge1.WorldMatrix.Translation)}\n" +
-            //               $"offset: \n{Vec3ToStr(roboConnector.hingeOffset)}\n" +
-            //               $"piston offset: \n{Vec3ToStr(roboConnector.hinge1.CubeGrid.WorldMatrix.Translation - roboConnector.H1.top.WorldMatrix.Translation)}\n" +
-            //               $"hinge local: \n{Vec3ToStr(roboConnector.hinge1.WorldMatrix.Translation - roboConnector.hinge1.CubeGrid.WorldMatrix.Translation)}\n");
+            //debug.SetText((roboConnector.L1.baza.WorldMatrix.Translation - roboConnector.L2.top.WorldMatrix.Translation).Length().ToString("0.00"));
 
             while (subscriberChannel.HasPendingMessage)
             {
@@ -175,6 +192,20 @@ namespace MessageReceiver
                 {
                     SetConnector(cmd);
                 }
+            }
+
+            if (!roboConnector.con1.IsConnected)
+            {
+                if (isWasConnected)
+                {
+                    isWasConnected = false;
+                    roboConnector.SetDefault();
+                }
+            }
+
+            if (roboConnector.con1.IsConnected)
+            {
+                isWasConnected = true;
             }
 
 //CODE END-----------------
@@ -243,6 +274,78 @@ namespace MessageReceiver
             public void TrySetConnector(Vector3D otherConnectorPos)
             {
                 H1.TrySetAsCloseAsPossibleTo(otherConnectorPos);
+                double lenght = TrySetHinge(otherConnectorPos);
+                TrySetPistonsLenght(lenght);
+                con1.Enabled = true;
+            }
+
+            private void TrySetPistonsLenght(double lenght)
+            {
+                double baseOffsetSum = 6.57f + 5f + 1.25f;
+                double requiredExtension = lenght - baseOffsetSum;
+                if (requiredExtension < 0)
+                {
+                    requiredExtension = 0;
+                }
+
+                double halfExtension = requiredExtension / 2.0f;
+                L1.pos = (float)halfExtension;
+                L2.pos = (float)halfExtension;
+            }
+
+            private double TrySetHinge(Vector3D otherConnectorPos)
+            {
+                Vector3D hingePos = hinge1.WorldMatrix.Translation;
+                Vector3D axis = hinge1.WorldMatrix.Down;
+                Vector3D zeroVector = hinge1.WorldMatrix.Forward;
+
+                Vector3D toTarget = otherConnectorPos - hingePos;
+                Vector3D projectedToTarget = toTarget - axis * Vector3D.Dot(toTarget, axis);
+
+                Vector3D toTargetFromTop = otherConnectorPos - hinge1.Top.WorldMatrix.Translation;
+                Vector3D projectedTargetFromTop = toTargetFromTop - axis * Vector3D.Dot(toTarget, axis);
+                double planar = projectedTargetFromTop.Length();
+
+                if (projectedToTarget.LengthSquared() > 0.0001)
+                {
+                    projectedToTarget.Normalize();
+                }
+                else
+                {
+                    projectedToTarget = zeroVector;
+                }
+
+                double cosAngle = Vector3D.Dot(zeroVector, projectedToTarget);
+                cosAngle = Clamp(cosAngle, -1.0, 1.0);
+                double angleRad = Math.Acos(cosAngle);
+
+                Vector3D cross = Vector3D.Cross(zeroVector, projectedToTarget);
+                if (Vector3D.Dot(cross, axis) < 0)
+                {
+                    angleRad = -angleRad;
+                }
+
+                float targetAngleDeg = MathHelper.ToDegrees((float)angleRad);
+                targetAngleDeg += 90;
+                SetAngle(targetAngleDeg);
+
+                return planar;
+            }
+
+            private void SetAngle(float angle)
+            {
+                hinge1.LowerLimitDeg = Clamp(angle - 0.1f, -90, 90);
+                hinge1.UpperLimitDeg = Clamp(angle + 0.1f, -90, 90);
+            }
+
+            public void SetDefault()
+            {
+                con1.Disconnect();
+                con1.Enabled = false;
+                H1.pos = 10;
+                L1.pos = 0;
+                L2.pos = 0;
+                SetAngle(0);
             }
         }
 
