@@ -159,6 +159,7 @@ namespace MessageReceiver
         }
 
         private bool isWasConnected = false;
+        private bool shouldConnect = false;
 
         public void Main(string argument, UpdateType updateSource)
         {
@@ -191,6 +192,7 @@ namespace MessageReceiver
                 if (cmd[0] == "UP_PARKING")
                 {
                     SetConnector(cmd);
+                    shouldConnect = true;
                 }
             }
 
@@ -201,9 +203,14 @@ namespace MessageReceiver
                     isWasConnected = false;
                     roboConnector.SetDefault();
                 }
-            }
 
-            if (roboConnector.con1.IsConnected)
+                if (shouldConnect && roboConnector.con1.Status == MyShipConnectorStatus.Connectable)
+                {
+                    roboConnector.con1.Connect();
+                    shouldConnect = false;
+                }
+            }
+            else
             {
                 isWasConnected = true;
             }
