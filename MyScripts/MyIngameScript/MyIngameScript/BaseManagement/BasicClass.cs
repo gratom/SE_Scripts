@@ -100,6 +100,7 @@ namespace BasicClass
 
         #endregion
 
+        //private ActionUpdater updater = new ActionUpdater();
         private const string NAME = "SCRIPT_NAME";
 
         private void AdditionInits()
@@ -110,6 +111,7 @@ namespace BasicClass
 
         public void Main(string argument, UpdateType updateSource)
         {
+            RealTime();
             #region basics
 
             if (argument == "RE")
@@ -126,12 +128,19 @@ namespace BasicClass
             }
 
             #endregion
-
-//CODE HERE----------------
-
-
-//CODE END-----------------
+            Routine();
+            //updater.Update((float)DeltaTime.TotalSeconds);
             PrevTime = TimeNow;
+        }
+
+        private void Routine()
+        {
+
+        }
+
+        private void RealTime()
+        {
+
         }
 
         #region SCR
@@ -351,6 +360,72 @@ namespace BasicClass
 
         #endregion
 
+        #region Piston
+
+        public class Piston
+        {
+            public const float TOP_PISTON_EXT = 1.41f;
+            public IMyPistonBase baza;
+            public IMyAttachableTopBlock top;
+
+            public Piston(IMyPistonBase piston)
+            {
+                baza = piston;
+                top = baza.Top;
+                target = baza.CurrentPosition;
+                pos = target; //update piston data
+            }
+
+            public float pos
+            {
+                get
+                {
+                    return target;
+                }
+                set
+                {
+                    target = value;
+                    baza.MaxLimit = target + 0.01f;
+                    baza.MinLimit = target - 0.01f;
+                    if (baza.CurrentPosition > baza.MaxLimit)
+                    {
+                        baza.Velocity = -1f;
+                    }
+                    else
+                    {
+                        baza.Velocity = 1f;
+                    }
+                }
+            }
+            private float target;
+
+            public Vector3D realPos => top.GetPosition();
+            public Vector3D mathRealPos
+            {
+                get
+                {
+                    MatrixD baseMatrix = baza.WorldMatrix;
+                    double currentExtension = baza.CurrentPosition + TOP_PISTON_EXT;
+                    Vector3D worldOffset = Vector3D.TransformNormal(new Vector3D(0, currentExtension, 0), baseMatrix);
+                    return baseMatrix.Translation + worldOffset;
+                }
+            }
+
+            public Vector3D minPosition => baza.WorldMatrix.Translation + baza.WorldMatrix.Up * 1.41;
+            public Vector3D maxPosition => baza.WorldMatrix.Translation + baza.WorldMatrix.Up * 11.41;
+            private Vector3D pistonAxis => baza.WorldMatrix.Up;
+
+            public void TrySetAsCloseAsPossibleTo(Vector3D targetPos)
+            {
+                Vector3D toTarget = targetPos - minPosition;
+                double projectedDistance = Vector3D.Dot(toTarget, pistonAxis);
+                double clampedExtension = Clamp(projectedDistance - 1.41, 0, 10);
+                pos = (float)clampedExtension;
+            }
+        }
+
+        #endregion
+
         #region counter
 
         public class SkipCounter
@@ -414,6 +489,168 @@ namespace BasicClass
         public static double Clamp(double val, double min, double max)
         {
             return Math.Min(Math.Max(val, min), max);
+        }
+
+        #endregion
+
+        #region sequentions
+
+        public class ActionUpdater : IUpdater
+        {
+            public void Update(float deltaTime)
+            {
+                UpdateAction?.Invoke(deltaTime);
+            }
+
+            public event Action<float> UpdateAction;
+        }
+
+        public interface IUpdater
+        {
+            event Action<float> UpdateAction;
+        }
+
+        public class ActionSequence
+        {
+            private List<Action> actions = new List<Action>();
+            private List<float> delays = new List<float>();
+            private int currentIndex = 0;
+            private float currentTimer = 0f;
+            private bool isRunning = false;
+            private bool isPaused = false;
+            private IUpdater updater;
+
+            public bool IsPlaying => isRunning;
+
+            public ActionSequence(IUpdater updater, params object[] sequenceSteps)
+            {
+                this.updater = updater;
+                updater.UpdateAction += Update;
+                ParseSteps(sequenceSteps);
+            }
+
+            public void Play()
+            {
+                if (isRunning && !isPaused)
+                {
+                    return;
+                }
+
+                if (isPaused)
+                {
+                    isPaused = false;
+                    return;
+                }
+
+                currentIndex = 0;
+                currentTimer = 0f;
+                isRunning = true;
+                isPaused = false;
+
+                ExecuteCurrentStep();
+            }
+
+            public void TryPlay()
+            {
+                if (!isRunning)
+                {
+                    Play();
+                }
+            }
+
+            public void Pause()
+            {
+                if (isRunning)
+                {
+                    isPaused = true;
+                }
+            }
+
+            public void Stop()
+            {
+                isRunning = false;
+                isPaused = false;
+                currentIndex = 0;
+                currentTimer = 0f;
+            }
+
+            public void Restart()
+            {
+                Stop();
+                Play();
+            }
+
+            public void Update(float deltaTime)
+            {
+                if (!isRunning || isPaused)
+                {
+                    return;
+                }
+
+                if (currentIndex >= actions.Count)
+                {
+                    isRunning = false;
+                    return;
+                }
+
+                if (delays[currentIndex] > 0f)
+                {
+                    currentTimer += deltaTime;
+                    if (currentTimer < delays[currentIndex])
+                    {
+                        return;
+                    }
+                    currentTimer = 0f;
+                }
+
+                currentIndex++;
+                ExecuteCurrentStep();
+            }
+
+            private void ExecuteCurrentStep()
+            {
+                while (currentIndex < actions.Count)
+                {
+                    actions[currentIndex]?.Invoke();
+
+                    if (delays[currentIndex] > 0f)
+                    {
+                        currentTimer = 0f;
+                        break;
+                    }
+
+                    currentIndex++;
+                }
+
+                if (currentIndex >= actions.Count)
+                {
+                    isRunning = false;
+                }
+            }
+
+            private void ParseSteps(object[] steps)
+            {
+                for (int i = 0; i < steps.Length; i++)
+                {
+                    object step = steps[i];
+
+                    if (step is Action)
+                    {
+                        actions.Add((Action)step);
+                        delays.Add(0f);
+                    }
+                    else if (step is float)
+                    {
+                        actions.Add(null);
+                        delays.Add((float)step);
+                    }
+                    else if (step is int)
+                    {
+                        actions.Add(null);
+                        delays.Add((int)step);
+                    }
+                }
+            }
         }
 
         #endregion
